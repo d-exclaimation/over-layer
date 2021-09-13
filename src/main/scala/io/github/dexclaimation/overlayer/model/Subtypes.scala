@@ -7,6 +7,8 @@
 
 package io.github.dexclaimation.overlayer.model
 
+import akka.actor.typed.ActorRef
+
 import java.util.UUID
 
 object Subtypes {
@@ -21,4 +23,7 @@ object Subtypes {
 
   /** Compound ID from PID & OID */
   type CID = String
+
+
+  type Ref = ActorRef[String]
 }
