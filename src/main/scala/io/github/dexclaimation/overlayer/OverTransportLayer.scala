@@ -18,6 +18,9 @@ import io.github.dexclaimation.overlayer.model.Hooks._
 import io.github.dexclaimation.overlayer.model.PoisonPill
 import io.github.dexclaimation.overlayer.model.Subtypes.PID
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
+import spray.json.JsonParser
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -35,7 +38,7 @@ class OverTransportLayer(
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
   val timeoutDuration: FiniteDuration = 30.seconds,
   val bufferSize: Int = 16
-)(implicit system: ActorSystem[SpawnProtocol.Command]) {
+)(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
   implicit private val keepAlive: Timeout = Timeout(timeoutDuration)
   implicit private val ex: ExecutionContext = system.executionContext
 
@@ -50,7 +53,7 @@ class OverTransportLayer(
    * @tparam TContext The Context Type.
    * @return A Flow that takes in and return a Message of type TextMessage.Strict.
    */
-  def flow[TContext: Any](ctx: TContext): Flow[Message, TextMessage.Strict, _] = {
+  def flow[TContext <: Any](ctx: TContext): Flow[Message, TextMessage.Strict, _] = {
     val pid = PID()
 
     val (actorRef, publisher) =
@@ -74,15 +77,27 @@ class OverTransportLayer(
     Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
   }
 
+  /** onInit Hook */
   private def onInit(ctx: Any, pid: String, actorRef: ActorRef[String]): InitHook = {
     // TODO: Add `onInit` Event Hook
   }
 
 
+  /** onMessage Hook */
   private def onMessage(ctx: Any, pid: String, actorRef: ActorRef[String]): MessageHook = {
-    _ => // TODO: Add `onMessage` Event Hook
+    case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
+      case GraphInit() =>
+      case GraphStart(oid, ast, op, vars) =>
+      case GraphStop(oid) =>
+      case GraphError(message) =>
+      case GraphPing() =>
+      case GraphTerminate() =>
+    }
+    case _ => ()
   }
 
+
+  /** onEnd Hook */
   private def onEnd(ctx: Any, pid: String, actorRef: ActorRef[String]): EndHook = {
     _ => // TODO: Add `onEnd` Event Hook
   }

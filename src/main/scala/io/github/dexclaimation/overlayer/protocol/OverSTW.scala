@@ -7,4 +7,15 @@
 
 package io.github.dexclaimation.overlayer.protocol
 
-object OverSTW extends OverWebsocket {}
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.GraphInit
+import spray.json.JsValue
+
+object OverSTW extends OverWebsocket {
+  def name = "graphql-ws"
+
+  // TODO: Handle Parser / Decoder
+  def decoder(json: JsValue): GraphMessage = {
+    GraphInit()
+  }
+}

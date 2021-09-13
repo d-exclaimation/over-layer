@@ -8,7 +8,14 @@
 
 package io.github.dexclaimation.overlayer.protocol
 
-trait OverWebsocket {}
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
+import spray.json.JsValue
+
+trait OverWebsocket {
+  def name: String
+
+  def decoder(json: JsValue): GraphMessage
+}
 
 
 object OverWebsocket {
