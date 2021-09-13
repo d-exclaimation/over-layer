@@ -4,7 +4,7 @@
 <p align="center"> <h1>OverLayer</h1></p>
 
 
-A GraphQL subscription transport layer using Akka.
+A GraphQL subscription stream-based transport layer using Akka.
 
 ## Setup
 
