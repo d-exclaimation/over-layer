@@ -10,13 +10,9 @@ package io.github.dexclaimation.overlayer.protocol
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
 import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, ProtoMessage}
-import io.github.dexclaimation.overlayer.utils.GraphQLRequestParser
-import sangria.ast.OperationType
-import sangria.parser.QueryParser
 import spray.json.{JsObject, JsString, JsValue}
 
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 object OverGW extends OverWebsocket {
   def name = "graphql-transport-ws"
