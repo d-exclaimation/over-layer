@@ -8,7 +8,7 @@ A GraphQL subscription stream-based transport layer using Akka.
 
 ## Setup
 
-**Latest Version**: `0.0.1`
+**Latest Version**: `0.0.1` **(Unreleased)**
 
 ```sbt
 libraryDependencies += "io.github.d-exclaimation" % "over-layer" % latestVersion
