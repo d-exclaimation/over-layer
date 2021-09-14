@@ -25,7 +25,8 @@ sub-protocol format using Akka Actors.
 
 ## Usage/Examples
 
-- [Documentation](./README.md)
+- [Documentation](https://overlayer.netlify.app/)
+- [Getting Started](https://overlayer.netlify.app/docs/intro)
 
 ### Protocols
 
