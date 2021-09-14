@@ -44,29 +44,18 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
  * @todo Actor Behaviour for client distribution
  */
 class OverTransportLayer[Ctx, Val](
-  schema: Schema[Ctx, Val],
-  root: Val,
+  val config: SchemaConfig[Ctx, Val],
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
-  queryValidator: QueryValidator = QueryValidator.default,
-  deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-  exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
-  deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-  middleware: List[Middleware[Ctx]] = Nil,
-  maxQueryDepth: Option[Int] = None,
-  queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-  timeoutDuration: FiniteDuration = 30.seconds,
-  bufferSize: Int = 16
+  val timeoutDuration: FiniteDuration = 30.seconds,
+  val bufferSize: Int = 16
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
+
+  // --- Implicits ---
   implicit private val keepAlive: Timeout = Timeout(timeoutDuration)
   implicit private val ex: ExecutionContext = system.executionContext
 
+
   private val proxy = system.ask[ActorRef[ProxyActions]] { rep =>
-    val config = SchemaConfig(
-      schema, root, queryValidator,
-      deferredResolver, exceptionHandler,
-      deprecationTracker, middleware,
-      maxQueryDepth, queryReducers
-    )
     SpawnProtocol.Spawn(
       behavior = ProxyStore.behavior[Ctx, Val](protocol, config),
       name = "ProxyStore",
@@ -78,6 +67,16 @@ class OverTransportLayer[Ctx, Val](
   private val FaultFunction: PartialFunction[String, Throwable] = {
     case PoisonPill.Pattern => new Error("Websocket connection is being shut down due to a PoisonPill Message")
   }
+
+  /**
+   * Websocket Handler Shorthand with the proper sub protocol and flow.
+   *
+   * ''Does not include a path, add this inside your path directives''
+   *
+   * @param ctx Context object used in the request.
+   * @return A Route
+   */
+  def ws(ctx: Ctx): Route = handleWebSocketMessagesForProtocol(flow(ctx), protocol.name)
 
   /**
    * Websocket Flow with the proper types for Akka Websocket.
@@ -109,9 +108,6 @@ class OverTransportLayer[Ctx, Val](
     Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
   }
 
-  def ws(ctx: Ctx): Route = {
-    handleWebSocketMessagesForProtocol(flow(ctx), protocol.name)
-  }
 
   /** onInit Hook */
   private def onInit(pid: String, ref: Ref): InitHook = {
@@ -154,4 +150,46 @@ object OverTransportLayer {
    * @return Behaviour for Spawning
    */
   def behavior: Behavior[SpawnProtocol.Command] = Behaviors.setup(_ => SpawnProtocol())
+
+  /**
+   * Create a new instance of [[OverTransportLayer]] using direct configuration.
+   *
+   * @param schema GraphQl Scheme used to execute subscriptions.
+   * @param root Root value object.
+   * @param protocol GraphQL over Websocket Transport Sub-Protocol.
+   * @param queryValidator Executor queryValidator.
+   * @param deferredResolver Any deferred resolver used by the executor.
+   * @param exceptionHandler Query Exception Handlers.
+   * @param deprecationTracker Deprecation Trackers used by the executor.
+   * @param middleware Resolver middleware.
+   * @param maxQueryDepth Limit of the query depth can be resolved.
+   * @param queryReducers Query reducers for resolvers.
+   * @param timeoutDuration Idle timeout duration for websocket.
+   * @param bufferSize The websocket client buffer size.
+   * @param sys Implicit Actor System with he proper Behavior.
+   * @tparam Ctx Context type of the Schema.
+   * @tparam Val Root Value type.
+   */
+  def apply[Ctx, Val](
+    schema: Schema[Ctx, Val],
+    root: Val,
+    protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
+    queryValidator: QueryValidator = QueryValidator.default,
+    deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
+    deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+    middleware: List[Middleware[Ctx]] = Nil,
+    maxQueryDepth: Option[Int] = None,
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil,
+    timeoutDuration: FiniteDuration = 30.seconds,
+    bufferSize: Int = 100
+  )(implicit sys: ActorSystem[SpawnProtocol.Command]): OverTransportLayer[Ctx, Val] = {
+    val config = SchemaConfig(
+      schema, root, queryValidator,
+      deferredResolver, exceptionHandler,
+      deprecationTracker, middleware,
+      maxQueryDepth, queryReducers
+    )
+    new OverTransportLayer[Ctx, Val](config, protocol, timeoutDuration, bufferSize)
+  }
 }

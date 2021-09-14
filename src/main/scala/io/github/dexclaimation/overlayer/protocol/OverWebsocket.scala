@@ -18,19 +18,27 @@ import spray.json.{JsString, JsValue}
 
 import scala.util.{Failure, Success}
 
+/** GraphQL Over Websocket Sub Protocols Specification */
 trait OverWebsocket {
+  /** Sub protocol name used in Websocket handler */
   def name: String
 
+  /** Custom JSON Decoder to the proper intent */
   def decoder(json: JsValue): GraphMessage
 
+  /** Initialization Callback */
   def init(ref: Ref): Unit
 
+  /** Next Data type name */
   def next: String
 
+  /** Completed Data type name */
   def complete: String
 
+  /** Error type name */
   def error: String
 
+  /** Decode Payload into queryAst & operationName & variables, otherwise return an error intent */
   def decodeStart(payload: Map[String, JsValue], id: String): GraphMessage = payload
     .get("query")
     .flatMap {
@@ -57,7 +65,9 @@ trait OverWebsocket {
 
 
 object OverWebsocket {
+  /** GraphQL Websocket using Apollo's `subscriptions-transport-ws` */
   val subscriptionsTransportWs: OverWebsocket = OverSTW
 
+  /** GraphQL Websocket using The Guild's `graphql-ws` */
   val graphqlWs: OverWebsocket = OverGW
 }

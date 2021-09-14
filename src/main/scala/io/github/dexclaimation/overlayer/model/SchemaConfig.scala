@@ -13,6 +13,9 @@ import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, Quer
 import sangria.schema.Schema
 import sangria.validation.QueryValidator
 
+/**
+ * Config wrapper used for executing queries.
+ */
 case class SchemaConfig[Ctx, Val](
   schema: Schema[Ctx, Val],
   root: Val,

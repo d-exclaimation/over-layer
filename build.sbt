@@ -25,7 +25,7 @@ ThisBuild / developers := List(
 
 crossPaths := false
 
-ThisBuild / description := "A GraphQL Subscription Transport Layer using Akka."
+ThisBuild / description := "A GraphQL over Websocket Stream-based Subscription Transport Layer on Akka."
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / homepage := Some(url("https://github.com/d-exclaimation/whiskey"))
 

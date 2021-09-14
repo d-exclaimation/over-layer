@@ -14,6 +14,13 @@ import spray.json.{JsObject, JsString, JsValue}
 
 import scala.util.control.NonFatal
 
+/**
+ * GraphQL over the `graphql-ws` sub protocol
+ *
+ * {{{
+ * OverTransportLayer(SchemaType, (), protocol = OverWebsocket.graphqlWs)
+ * }}}
+ */
 object OverGW extends OverWebsocket {
   def name = "graphql-transport-ws"
 

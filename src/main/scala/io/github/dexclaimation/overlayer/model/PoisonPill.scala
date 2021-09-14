@@ -7,6 +7,9 @@
 
 package io.github.dexclaimation.overlayer.model
 
+/**
+ * Poison Pill String pattern.
+ */
 object PoisonPill {
   val Pattern = "@Websocket.Message.PoisonPill"
 

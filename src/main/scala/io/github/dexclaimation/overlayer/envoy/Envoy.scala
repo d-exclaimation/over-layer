@@ -28,6 +28,15 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
+/**
+ * Envoy Actor for handling specific operation stream for one websocket client.
+ * @param pid Websocket Client PID.
+ * @param ref User client ActorRef.
+ * @param userContext Request Defined Schema Context.
+ * @param config Schema Config for setting up Executor.
+ * @param protocol GraphQL Over Websocket sub protocol.
+ * @param context ActorSystem Behavior Context.
+ */
 class Envoy[Ctx, Val](
   val pid: PID,
   val ref: Ref,

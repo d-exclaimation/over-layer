@@ -24,6 +24,6 @@ object Subtypes {
   /** Compound ID from PID & OID */
   type CID = String
 
-
+  /** ActorRef that accept String used for Websocket Messaging */
   type Ref = ActorRef[String]
 }

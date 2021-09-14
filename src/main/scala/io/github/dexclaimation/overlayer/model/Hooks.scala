@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.ws.Message
 
 import scala.util.Try
 
+/** Websocket Event Hook */
 object Hooks {
   /** Initial Connection Event Hook */
   type InitHook = Unit

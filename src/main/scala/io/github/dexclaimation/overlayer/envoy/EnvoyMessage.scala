@@ -11,16 +11,22 @@ import io.github.dexclaimation.overlayer.model.Subtypes.OID
 import sangria.ast.Document
 import spray.json.JsObject
 
+/** Envoy Message Intent */
 sealed trait EnvoyMessage
 
 object EnvoyMessage {
+  /** Envoy Intent to start a Subscription Stream */
   case class Subscribe(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends EnvoyMessage
 
+  /** Envoy Intent to kill a Subscription Stream using a Kill Switch */
   case class Unsubscribe(oid: OID) extends EnvoyMessage
 
+  /** Envoy ''self-used'' Intent to pipe finished Stream's Future back into the mailbox */
   case class Ended(oid: OID) extends EnvoyMessage
 
+  /** Envoy Ignored Intent */
   case class Ignore() extends EnvoyMessage
 
+  /** Envoy Kill / PoisonPill Intent */
   case class Acid() extends EnvoyMessage
 }

@@ -19,16 +19,35 @@ import io.github.dexclaimation.overlayer.utils.ExceptionUtil.tolerate
 
 import scala.collection.mutable
 
+/**
+ * A Proxy Actor managing distribution of operations and top-level state
+ *
+ * @param protocol The GraphQL Subscription Sub Protocol used.
+ * @param config   The Schema Configuration.
+ * @param context  The Actor Context for the Abstract Behavior.
+ */
 class ProxyStore[Ctx, Val](
   val protocol: OverWebsocket,
   val config: SchemaConfig[Ctx, Val],
   override val context: ActorContext[ProxyActions]
 ) extends AbstractBehavior(context) {
 
+  /** Client State mapped to the PID */
   private val refs: mutable.Map[PID, Ref] = mutable.Map.empty[PID, Ref]
 
+  /** Envoy State mapped to the PID */
   private val envoys: mutable.Map[PID, ActorRef[EnvoyMessage]] = mutable.Map.empty[PID, ActorRef[EnvoyMessage]]
 
+  /**
+   * Implement this method to process an incoming message and return the next behavior.
+   *
+   * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+   *
+   *  - returning `stopped` will terminate this Behavior.
+   *  - returning `this` or `same` designates to reuse the current Behavior.
+   *  - returning `unhandled` keeps the same Behavior and signals that the message was not yet handled.
+   *
+   */
   def onMessage(msg: ProxyActions): Behavior[ProxyActions] = receive(msg) {
     case Connect(pid, ref) => refs.update(pid, ref)
     case Disconnect(pid) => tolerate {
@@ -60,6 +79,10 @@ class ProxyStore[Ctx, Val](
 }
 
 object ProxyStore {
+
+  /**
+   * Setup a full Actor behavior using the ProxyStore
+   */
   def behavior[Ctx, Val](
     protocol: OverWebsocket,
     config: SchemaConfig[Ctx, Val]
