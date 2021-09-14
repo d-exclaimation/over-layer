@@ -48,7 +48,7 @@ class Envoy[Ctx, Val](
       val switch = KillSwitches.shared(oid)
 
       val fut = executeSchema(ast, op, vars)
-        .map(ProtoMessage.Operation("data", oid, _))
+        .map(ProtoMessage.Operation(protocol.name, oid, _))
         .map(_.json)
         .via(switch.flow)
         .runForeach(ref ! _)
@@ -66,7 +66,7 @@ class Envoy[Ctx, Val](
         .foreach(_.shutdown())
     }
 
-    case Ended(oid) => ref.!(ProtoMessage.NoPayload("complete", oid).json)
+    case Ended(oid) => ref.!(ProtoMessage.NoPayload(protocol.complete, oid).json)
     case _ => ()
   }
 

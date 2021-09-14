@@ -11,6 +11,8 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.server.Directives.handleWebSocketMessagesForProtocol
+import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
@@ -107,6 +109,10 @@ class OverTransportLayer[Ctx, Val](
     Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
   }
 
+  def ws(ctx: Ctx): Route = {
+    handleWebSocketMessagesForProtocol(flow(ctx), protocol.name)
+  }
+
   /** onInit Hook */
   private def onInit(pid: String, ref: Ref): InitHook = {
     proxy !! Connect(pid, ref)
@@ -116,13 +122,13 @@ class OverTransportLayer[Ctx, Val](
   /** onMessage Hook */
   private def onMessage(ctx: Any, pid: String, ref: Ref): MessageHook = {
     case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
-      case GraphInit() => // TODO: Protocol Specific Init responses
+      case GraphInit() => protocol.init(ref)
 
       case GraphStart(oid, ast, op, vars) => proxy !! StartOp(pid, oid, ast, ctx, op, vars)
 
       case GraphStop(oid) => proxy !! StopOp(pid, oid)
 
-      case GraphError(msg) => ref.!(ProtoMessage.NoID("error", JsString(msg)).json)
+      case GraphError(msg) => ref.!(ProtoMessage.NoID(protocol.error, JsString(msg)).json)
 
       case GraphPing() => ref.!(ProtoMessage.Empty("pong").json)
 
