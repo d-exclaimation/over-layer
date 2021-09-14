@@ -16,14 +16,18 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
 import io.github.dexclaimation.overlayer.model.Hooks._
-import io.github.dexclaimation.overlayer.model.PoisonPill
 import io.github.dexclaimation.overlayer.model.Subtypes.{PID, Ref}
+import io.github.dexclaimation.overlayer.model.{PoisonPill, SchemaConfig}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
-import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
-import io.github.dexclaimation.overlayer.proxy.ProxyActions.{Connect, Disconnect}
+import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, ProtoMessage}
+import io.github.dexclaimation.overlayer.proxy.ProxyActions.{Connect, Disconnect, StartOp, StopOp}
 import io.github.dexclaimation.overlayer.proxy.{ProxyActions, ProxyStore}
-import spray.json.JsonParser
+import sangria.execution.deferred.DeferredResolver
+import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, QueryReducer}
+import sangria.schema.Schema
+import sangria.validation.QueryValidator
+import spray.json.{JsString, JsonParser}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -38,16 +42,34 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
  * @todo Actor Behaviour for client distribution
  */
 class OverTransportLayer[Ctx, Val](
+  schema: Schema[Ctx, Val],
+  root: Val,
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
-  val timeoutDuration: FiniteDuration = 30.seconds,
-  val bufferSize: Int = 16
+  queryValidator: QueryValidator = QueryValidator.default,
+  deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+  exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
+  deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+  middleware: List[Middleware[Ctx]] = Nil,
+  maxQueryDepth: Option[Int] = None,
+  queryReducers: List[QueryReducer[Ctx, _]] = Nil,
+  timeoutDuration: FiniteDuration = 30.seconds,
+  bufferSize: Int = 16
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
   implicit private val keepAlive: Timeout = Timeout(timeoutDuration)
   implicit private val ex: ExecutionContext = system.executionContext
 
   private val proxy = system.ask[ActorRef[ProxyActions]] { rep =>
+    val config = SchemaConfig(
+      schema, root, queryValidator,
+      deferredResolver, exceptionHandler,
+      deprecationTracker, middleware,
+      maxQueryDepth, queryReducers
+    )
     SpawnProtocol.Spawn(
-      behavior = ProxyStore.behavior[Ctx, Val], name = "ProxyStore", props = Props.empty, replyTo = rep
+      behavior = ProxyStore.behavior[Ctx, Val](protocol, config),
+      name = "ProxyStore",
+      props = Props.empty,
+      replyTo = rep
     )
   }
 
@@ -59,7 +81,6 @@ class OverTransportLayer[Ctx, Val](
    * Websocket Flow with the proper types for Akka Websocket.
    *
    * @param ctx Given the required context.
-   * @tparam TContext The Context Type.
    * @return A Flow that takes in and return a Message of type TextMessage.Strict.
    */
   def flow(ctx: Ctx): Flow[Message, TextMessage.Strict, _] = {
@@ -95,11 +116,16 @@ class OverTransportLayer[Ctx, Val](
   /** onMessage Hook */
   private def onMessage(ctx: Any, pid: String, ref: Ref): MessageHook = {
     case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
-      case GraphInit() => ()
-      case GraphStart(oid, ast, op, vars) => ()
-      case GraphStop(oid) => ()
-      case GraphError(message) => ref ! message
-      case GraphPing() => ()
+      case GraphInit() => // TODO: Protocol Specific Init responses
+
+      case GraphStart(oid, ast, op, vars) => proxy !! StartOp(pid, oid, ast, ctx, op, vars)
+
+      case GraphStop(oid) => proxy !! StopOp(pid, oid)
+
+      case GraphError(msg) => ref.!(ProtoMessage.NoID("error", JsString(msg)).json)
+
+      case GraphPing() => ref.!(ProtoMessage.Empty("pong").json)
+
       case GraphTerminate() => ref ! PoisonPill()
     }
     case _ => ()

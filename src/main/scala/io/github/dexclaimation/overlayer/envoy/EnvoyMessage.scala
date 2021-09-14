@@ -16,6 +16,8 @@ sealed trait EnvoyMessage
 object EnvoyMessage {
   case class Subscribe(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends EnvoyMessage
 
+  case class Unsubscribe(oid: OID) extends EnvoyMessage
+
   case class Ended(oid: OID) extends EnvoyMessage
 
   case class Ignore() extends EnvoyMessage
