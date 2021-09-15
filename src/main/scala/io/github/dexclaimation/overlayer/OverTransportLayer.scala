@@ -47,7 +47,7 @@ class OverTransportLayer[Ctx, Val](
   val config: SchemaConfig[Ctx, Val],
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
   val timeoutDuration: FiniteDuration = 30.seconds,
-  val bufferSize: Int = 16
+  val bufferSize: Int = 32
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
 
   // --- Implicits ---
