@@ -24,9 +24,6 @@ object EnvoyMessage {
   /** Envoy ''self-used'' Intent to pipe finished Stream's Future back into the mailbox */
   case class Ended(oid: OID) extends EnvoyMessage
 
-  /** Envoy Ignored Intent */
-  case class Ignore() extends EnvoyMessage
-
   /** Envoy Kill / PoisonPill Intent */
   case class Acid() extends EnvoyMessage
 }

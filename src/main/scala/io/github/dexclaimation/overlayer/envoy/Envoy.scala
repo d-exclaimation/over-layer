@@ -7,9 +7,11 @@
 
 package io.github.dexclaimation.overlayer.envoy
 
+import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.stream.Materializer.createMaterializer
+import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{KillSwitch, KillSwitches, Materializer}
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
 import io.github.dexclaimation.overlayer.model.SchemaConfig
@@ -26,7 +28,7 @@ import spray.json.{JsObject, JsValue}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.Try
 
 /**
  * Envoy Actor for handling specific operation stream for one websocket client.
@@ -57,17 +59,18 @@ class Envoy[Ctx, Val](
     case Subscribe(oid, ast, op, vars) => tolerate {
       val switch = KillSwitches.shared(oid)
 
-      val fut = executeSchema(ast, op, vars)
+      val sink = Flow[String]
+        .map(ref ! _)
+        .via(switch.flow)
+        .to(Sink.onComplete(onEnded(oid)))
+
+      executeSchema(ast, op, vars)
         .map(ProtoMessage.Operation(protocol.name, oid, _))
         .map(_.json)
-        .via(switch.flow)
-        .runForeach(ref ! _)
+        .to(sink)
+        .run()
 
       switches.update(oid, switch)
-
-      context.pipeToSelf(fut) { _ =>
-        Ended(oid)
-      }
     }
 
     case Unsubscribe(oid) => tolerate {
@@ -75,8 +78,8 @@ class Envoy[Ctx, Val](
         .foreach(_.shutdown())
     }
 
-    case Ended(oid) => ref.!(ProtoMessage.NoPayload(protocol.complete, oid).json)
-    case _ => ()
+    case Ended(oid) => ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
+
   }
 
 
@@ -105,5 +108,9 @@ class Envoy[Ctx, Val](
       maxQueryDepth = config.maxQueryDepth,
       queryReducers = config.queryReducers
     )
+
+  private def onEnded(oid: OID): Try[Done] => Unit = { _ =>
+    context.self ! Ended(oid)
+  }
 }
 
