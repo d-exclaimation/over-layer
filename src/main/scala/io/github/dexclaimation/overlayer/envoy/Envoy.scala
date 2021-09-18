@@ -11,6 +11,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.stream.Materializer
 import akka.stream.Materializer.createMaterializer
+import akka.stream.typed.scaladsl.ActorSink
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
 import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
@@ -53,15 +54,14 @@ class Envoy[Ctx, Val](
 
   def onMessage(msg: EnvoyMessage): Behavior[EnvoyMessage] = receive(msg) {
     case Subscribe(oid, ast, op, vars) => tolerate {
-      val fut = executeSchema(ast, op, vars)
-        .map(ProtoMessage.Operation(protocol.name, oid, _))
+      executeSchema(ast, op, vars)
+        .map(ProtoMessage.Operation(protocol.next, oid, _))
         .map(_.json)
-        .filter(_ => ops.contains(oid))
-        .runForeach(ref ! _)
+        .map(Output(oid, _))
+        .to(ActorSink.actorRef(context.self, onCompleteMessage = Ended(oid), onFailureMessage = _ => Ended(oid)))
+        .run()
 
-      context.pipeToSelf(fut) { _ =>
-        Ended(oid)
-      }
+      ops.add(oid)
     }
 
     case Unsubscribe(oid) => tolerate {
@@ -71,6 +71,10 @@ class Envoy[Ctx, Val](
     case Ended(oid) => if (ops.contains(oid)) {
       ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
       ops.remove(oid)
+    }
+
+    case Output(oid, data) => tolerate {
+      if (ops.contains(oid)) ref ! data
     }
 
     case _ => ()

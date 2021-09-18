@@ -24,6 +24,9 @@ object EnvoyMessage {
   /** Envoy ''self-used'' Intent to pipe finished Stream's Future back into the mailbox */
   case class Ended(oid: OID) extends EnvoyMessage
 
+  /** Envoy Outgoing data concurrent safe handler by sending back to the mailbox */
+  case class Output(oid: OID, data: String) extends EnvoyMessage
+
   /** Envoy Kill / PoisonPill Intent */
   case class Acid() extends EnvoyMessage
 }
