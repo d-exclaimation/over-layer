@@ -7,12 +7,10 @@
 
 package io.github.dexclaimation.overlayer.envoy
 
-import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import akka.stream.Materializer
 import akka.stream.Materializer.createMaterializer
-import akka.stream.scaladsl.{Flow, Sink}
-import akka.stream.{KillSwitch, KillSwitches, Materializer}
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
 import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
@@ -28,7 +26,6 @@ import spray.json.{JsObject, JsValue}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
-import scala.util.Try
 
 /**
  * Envoy Actor for handling specific operation stream for one websocket client.
@@ -52,33 +49,29 @@ class Envoy[Ctx, Val](
   implicit private val ex: ExecutionContext = context.executionContext
   implicit private val mat: Materializer = createMaterializer(context)
 
-  private val switches: mutable.Map[OID, KillSwitch] =
-    mutable.Map.empty[OID, KillSwitch]
+  private val ops = mutable.Set.empty[OID]
 
   def onMessage(msg: EnvoyMessage): Behavior[EnvoyMessage] = receive(msg) {
     case Subscribe(oid, ast, op, vars) => tolerate {
-      val switch = KillSwitches.shared(oid)
-
-      val sink = Flow[String]
-        .map(ref ! _)
-        .via(switch.flow)
-        .to(Sink.onComplete(onEnded(oid)))
-
-      executeSchema(ast, op, vars)
+      val fut = executeSchema(ast, op, vars)
         .map(ProtoMessage.Operation(protocol.name, oid, _))
         .map(_.json)
-        .to(sink)
-        .run()
+        .filter(_ => ops.contains(oid))
+        .runForeach(ref ! _)
 
-      switches.update(oid, switch)
+      context.pipeToSelf(fut) { _ =>
+        Ended(oid)
+      }
     }
 
     case Unsubscribe(oid) => tolerate {
-      switches.get(oid)
-        .foreach(_.shutdown())
+      ops.remove(oid)
     }
 
-    case Ended(oid) => ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
+    case Ended(oid) => if (ops.contains(oid)) {
+      ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
+      ops.remove(oid)
+    }
 
     case _ => ()
   }
@@ -86,7 +79,7 @@ class Envoy[Ctx, Val](
 
   private def receive(msg: EnvoyMessage)(handler: EnvoyMessage => Unit): Behavior[EnvoyMessage] = msg match {
     case Acid() =>
-      switches.values.foreach(_.shutdown())
+      ops.clear()
       Behaviors.stopped[EnvoyMessage]
     case notStop =>
       handler(notStop)
@@ -109,9 +102,5 @@ class Envoy[Ctx, Val](
       maxQueryDepth = config.maxQueryDepth,
       queryReducers = config.queryReducers
     )
-
-  private def onEnded(oid: OID): Try[Done] => Unit = { _ =>
-    context.self ! Ended(oid)
-  }
 }
 
