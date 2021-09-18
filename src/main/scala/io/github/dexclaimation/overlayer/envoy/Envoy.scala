@@ -80,6 +80,7 @@ class Envoy[Ctx, Val](
 
     case Ended(oid) => ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
 
+    case _ => ()
   }
 
 
