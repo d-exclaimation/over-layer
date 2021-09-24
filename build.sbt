@@ -56,3 +56,5 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
   )
 }
+
+libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
