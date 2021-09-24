@@ -8,7 +8,7 @@
 package io.github.dexclaimation.overlayer.websocket
 
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{Inlet, KillSwitches, Outlet}
 import io.github.dexclaimation.overlayer.OverTransportLayer
 import org.junit.Test
@@ -36,19 +36,10 @@ class SubscriptionsTransportWsTest {
    * 1. Properly Setup Flow Test
    */
   @Test def properlySetupFlow(): Unit = {
-
     val flow = transport.flow(ctx)
-
-    val inMatch: PartialFunction[Any, Unit] = {
-      case _: Inlet[Message] => ()
+    flow match {
+      case _: Flow[Message, TextMessage.Strict, Any] => ()
     }
-
-    val outMatch: PartialFunction[Any, Unit] = {
-      case _: Outlet[Message] => ()
-    }
-
-    inMatch(flow.shape.in)
-    outMatch(flow.shape.out)
   }
 
   @Test def initializeConnection(): Unit = {
