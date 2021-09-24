@@ -71,7 +71,7 @@ class SubscriptionsTransportWsTest {
       .via(kill.flow)
       .runWith(source, sink)
 
-    wait(100) {
+    wait(50) {
       kill.shutdown()
     }
 
@@ -111,7 +111,7 @@ class SubscriptionsTransportWsTest {
     QueryParser.parse("mutation { increment }")
       .map { doc => Executor.execute(demoSchema, doc, ctx, ()) }
 
-    wait(100) {
+    wait(50) {
       kill.shutdown()
     }
 
@@ -140,7 +140,7 @@ class SubscriptionsTransportWsTest {
       .map(TextMessage.Strict.apply)
 
 
-    val sink = Sink.takeLast[TextMessage.Strict](1)
+    val sink = Sink.seq[TextMessage.Strict]
 
     val kill = KillSwitches.shared("ok")
 
@@ -161,5 +161,51 @@ class SubscriptionsTransportWsTest {
         ).compactPrint
       )
     )
+  }
+
+  @Test def stopOperation(): Unit = {
+    val source =
+      Source(
+        Seq(
+          JsObject(
+            "type" -> JsString("connection_init"),
+            "payload" -> JsObject.empty
+          ),
+          JsObject(
+            "type" -> JsString("start"),
+            "id" -> JsString("1"),
+            "payload" -> JsObject(
+              "query" -> JsString("subscription { state }")
+            )
+          ),
+          JsObject(
+            "type" -> JsString("stop"),
+            "id" -> JsString("1"),
+          )
+        )
+      )
+        .map(_.compactPrint)
+        .map(TextMessage.Strict.apply)
+
+    val kill = KillSwitches.shared("good")
+    val sink = Sink.takeLast[TextMessage.Strict](3)
+    val (_, fut) = transport.flow(ctx)
+      .via(kill.flow)
+      .runWith(source, sink)
+
+    wait(25) {
+      QueryParser.parse("mutation { increment }")
+        .map { doc =>
+          Executor.execute(demoSchema, doc, ctx, ())
+            .onComplete(_ =>
+              wait(10) {
+                kill.shutdown()
+              }
+            )
+        }
+    }
+
+    val seq = Await.result(fut, Duration.Inf)
+    assert(seq.length < 3)
   }
 }
