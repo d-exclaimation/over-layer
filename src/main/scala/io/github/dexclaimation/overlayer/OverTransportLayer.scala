@@ -96,6 +96,7 @@ class OverTransportLayer[Ctx, Val](
           overflowStrategy = OverflowStrategy.dropHead
         )
         .map(TextMessage.Strict)
+        .idleTimeout(timeoutDuration)
         .toMat(Sink.asPublisher(false))(Keep.both)
         .run()
 
@@ -154,19 +155,19 @@ object OverTransportLayer {
   /**
    * Create a new instance of [[OverTransportLayer]] using direct configuration.
    *
-   * @param schema GraphQl Scheme used to execute subscriptions.
-   * @param root Root value object.
-   * @param protocol GraphQL over Websocket Transport Sub-Protocol.
-   * @param queryValidator Executor queryValidator.
-   * @param deferredResolver Any deferred resolver used by the executor.
-   * @param exceptionHandler Query Exception Handlers.
+   * @param schema             GraphQl Scheme used to execute subscriptions.
+   * @param root               Root value object.
+   * @param protocol           GraphQL over Websocket Transport Sub-Protocol.
+   * @param queryValidator     Executor queryValidator.
+   * @param deferredResolver   Any deferred resolver used by the executor.
+   * @param exceptionHandler   Query Exception Handlers.
    * @param deprecationTracker Deprecation Trackers used by the executor.
-   * @param middleware Resolver middleware.
-   * @param maxQueryDepth Limit of the query depth can be resolved.
-   * @param queryReducers Query reducers for resolvers.
-   * @param timeoutDuration Idle timeout duration for websocket.
-   * @param bufferSize The websocket client buffer size.
-   * @param sys Implicit Actor System with he proper Behavior.
+   * @param middleware         Resolver middleware.
+   * @param maxQueryDepth      Limit of the query depth can be resolved.
+   * @param queryReducers      Query reducers for resolvers.
+   * @param timeoutDuration    Idle timeout duration for websocket.
+   * @param bufferSize         The websocket client buffer size.
+   * @param sys                Implicit Actor System with he proper Behavior.
    * @tparam Ctx Context type of the Schema.
    * @tparam Val Root Value type.
    */
