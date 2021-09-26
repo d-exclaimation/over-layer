@@ -28,7 +28,6 @@ import spray.json.{JsObject, JsValue}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
 
 /**
  * Envoy Actor for handling specific operation stream for one websocket client.
@@ -67,7 +66,6 @@ class Envoy[Ctx, Val](
         .map(ProtoMessage.Operation(protocol.next, oid, _))
         .map(_.json)
         .map(Output(oid, _))
-        .idleTimeout(15.seconds)
         .viaMat(KillSwitches.single)(Keep.both)
         .to(sink)
         .run()
@@ -96,8 +94,10 @@ class Envoy[Ctx, Val](
 
   private def receive(msg: EnvoyMessage)(handler: EnvoyMessage => Unit): Behavior[EnvoyMessage] = msg match {
     case Acid() =>
+      ops.values.foreach(_.shutdown())
       ops.clear()
       Behaviors.stopped[EnvoyMessage]
+
     case notStop =>
       handler(notStop)
       this

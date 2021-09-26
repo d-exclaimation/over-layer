@@ -31,8 +31,8 @@ import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.{JsString, JsonParser}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext}
 
 /**
  * GraphQL Transport Layer for handling distributed websocket based subscription.
@@ -55,13 +55,14 @@ class OverTransportLayer[Ctx, Val](
   implicit private val ex: ExecutionContext = system.executionContext
 
 
-  private val proxy = system.ask[ActorRef[ProxyActions]] { rep =>
-    SpawnProtocol.Spawn(
+  private val proxy = {
+    val spawn = (rep: ActorRef[ActorRef[ProxyActions]]) => SpawnProtocol.Spawn(
       behavior = ProxyStore.behavior[Ctx, Val](protocol, config),
       name = "ProxyStore",
       props = Props.empty,
       replyTo = rep
     )
+    Await.result(system.ask(spawn), timeoutDuration)
   }
 
   private val FaultFunction: PartialFunction[String, Throwable] = {
@@ -112,7 +113,7 @@ class OverTransportLayer[Ctx, Val](
 
   /** onInit Hook */
   private def onInit(pid: String, ref: Ref): InitHook = {
-    proxy !! Connect(pid, ref)
+    proxy ! Connect(pid, ref)
   }
 
 
@@ -121,9 +122,9 @@ class OverTransportLayer[Ctx, Val](
     case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
       case GraphInit() => protocol.init(ref)
 
-      case GraphStart(oid, ast, op, vars) => proxy !! StartOp(pid, oid, ast, ctx, op, vars)
+      case GraphStart(oid, ast, op, vars) => proxy ! StartOp(pid, oid, ast, ctx, op, vars)
 
-      case GraphStop(oid) => proxy !! StopOp(pid, oid)
+      case GraphStop(oid) => proxy ! StopOp(pid, oid)
 
       case GraphError(msg) => ref.!(ProtoMessage.NoID(protocol.error, JsString(msg)).json)
 
@@ -137,7 +138,7 @@ class OverTransportLayer[Ctx, Val](
 
   /** onEnd Hook */
   private def onEnd(pid: String): EndHook = { _ =>
-    proxy !! Disconnect(pid)
+    proxy ! Disconnect(pid)
   }
 
 }
