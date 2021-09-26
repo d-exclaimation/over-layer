@@ -9,9 +9,10 @@ package io.github.dexclaimation.overlayer.envoy
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
-import akka.stream.Materializer
 import akka.stream.Materializer.createMaterializer
+import akka.stream.scaladsl.Keep
 import akka.stream.typed.scaladsl.ActorSink
+import akka.stream.{KillSwitches, Materializer, UniqueKillSwitch}
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
 import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
@@ -27,6 +28,7 @@ import spray.json.{JsObject, JsValue}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 
 /**
  * Envoy Actor for handling specific operation stream for one websocket client.
@@ -50,28 +52,39 @@ class Envoy[Ctx, Val](
   implicit private val ex: ExecutionContext = context.executionContext
   implicit private val mat: Materializer = createMaterializer(context)
 
-  private val ops = mutable.Set.empty[OID]
+  private val ops = mutable.Map.empty[OID, UniqueKillSwitch]
 
   def onMessage(msg: EnvoyMessage): Behavior[EnvoyMessage] = receive(msg) {
     case Subscribe(oid, ast, op, vars) => tolerate {
-      executeSchema(ast, op, vars)
+      val sink = ActorSink
+        .actorRef[EnvoyMessage](
+          context.self,
+          onCompleteMessage = Ended(oid),
+          onFailureMessage = _ => Subscribe(oid, ast, op, vars)
+        )
+
+      val (_, kill) = executeSchema(ast, op, vars)
         .map(ProtoMessage.Operation(protocol.next, oid, _))
         .map(_.json)
         .map(Output(oid, _))
-        .to(ActorSink.actorRef(context.self, onCompleteMessage = Ended(oid), onFailureMessage = _ => Ended(oid)))
+        .idleTimeout(15.seconds)
+        .viaMat(KillSwitches.single)(Keep.both)
+        .to(sink)
         .run()
 
-      ops.add(oid)
+      ops.update(oid, kill)
     }
 
     case Unsubscribe(oid) => tolerate {
       ops.remove(oid)
     }
 
-    case Ended(oid) => if (ops.contains(oid)) {
-      ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
-      ops.remove(oid)
-    }
+    case Ended(oid) => ops.get(oid)
+      .foreach { kill =>
+        ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
+        kill.shutdown()
+        ops.remove(oid)
+      }
 
     case Output(oid, data) => tolerate {
       if (ops.contains(oid)) ref ! data
