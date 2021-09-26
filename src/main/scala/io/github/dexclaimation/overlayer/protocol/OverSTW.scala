@@ -9,7 +9,7 @@ package io.github.dexclaimation.overlayer.protocol
 
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
-import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, ProtoMessage}
+import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
 import spray.json.{JsObject, JsString, JsValue}
 
 import scala.util.control.NonFatal
@@ -50,15 +50,15 @@ object OverSTW extends OverWebsocket {
       case Seq(JsString(GQL_CONNECTION_TERMINATE)) => GraphTerminate()
 
       // Irrelevant JsObject
-      case _ => GraphError("Invalid operation message type")
+      case _ => GraphException("Invalid operation message type")
     }
   } catch {
-    case NonFatal(_) => GraphError("Invalid operation message type")
+    case NonFatal(_) => GraphException("Invalid operation message type")
   }
 
   def init(ref: Ref): Unit = {
-    ref ! ProtoMessage.Empty(_type = GQL_CONNECTION_ACK).json
-    ref ! ProtoMessage.Empty(_type = GQL_CONNECTION_KEEP_ALIVE).json
+    ref ! OpMsg.Empty(_type = GQL_CONNECTION_ACK).json
+    ref ! OpMsg.Empty(_type = GQL_CONNECTION_KEEP_ALIVE).json
   }
 
   def next = GQL_DATA

@@ -17,14 +17,15 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
+import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.Hooks._
 import io.github.dexclaimation.overlayer.model.Subtypes.{PID, Ref}
 import io.github.dexclaimation.overlayer.model.{PoisonPill, SchemaConfig}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
-import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, ProtoMessage}
+import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
 import io.github.dexclaimation.overlayer.proxy.ProxyActions.{Connect, Disconnect, StartOp, StopOp}
-import io.github.dexclaimation.overlayer.proxy.{ProxyActions, ProxyStore}
+import io.github.dexclaimation.overlayer.proxy.{ProxyActions, Proxy}
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, QueryReducer}
 import sangria.schema.Schema
@@ -57,7 +58,7 @@ class OverTransportLayer[Ctx, Val](
 
   private val proxy = {
     val spawn = (rep: ActorRef[ActorRef[ProxyActions]]) => SpawnProtocol.Spawn(
-      behavior = ProxyStore.behavior[Ctx, Val](protocol, config),
+      behavior = Proxy.behavior[Ctx, Val](protocol, config),
       name = "ProxyStore",
       props = Props.empty,
       replyTo = rep
@@ -65,7 +66,7 @@ class OverTransportLayer[Ctx, Val](
     Await.result(system.ask(spawn), timeoutDuration)
   }
 
-  private val FaultFunction: PartialFunction[String, Throwable] = {
+  private val FaultFunction: PartialFunction[String, Unit] = {
     case PoisonPill.Pattern => new Error("Websocket connection is being shut down due to a PoisonPill Message")
   }
 
@@ -91,8 +92,8 @@ class OverTransportLayer[Ctx, Val](
     val (actorRef, publisher) =
       ActorSource
         .actorRef[String](
-          completionMatcher = PartialFunction.empty,
-          failureMatcher = FaultFunction,
+          completionMatcher = FaultFunction,
+          failureMatcher = PartialFunction.empty,
           bufferSize = bufferSize,
           overflowStrategy = OverflowStrategy.dropHead
         )
@@ -126,9 +127,11 @@ class OverTransportLayer[Ctx, Val](
 
       case GraphStop(oid) => proxy ! StopOp(pid, oid)
 
-      case GraphError(msg) => ref.!(ProtoMessage.NoID(protocol.error, JsString(msg)).json)
+      case GraphError(oid, message) => ref ? OpMsg(protocol.error, oid, JsString(message))
 
-      case GraphPing() => ref.!(ProtoMessage.Empty("pong").json)
+      case GraphException(message) => ref ? OpMsg.NoID(protocol.error, JsString(message))
+
+      case GraphPing() => ref ? OpMsg.Empty("pong")
 
       case GraphTerminate() => ref ! PoisonPill()
     }

@@ -9,7 +9,7 @@ package io.github.dexclaimation.overlayer.protocol
 
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
-import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, ProtoMessage}
+import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
 import spray.json.{JsObject, JsString, JsValue}
 
 import scala.util.control.NonFatal
@@ -50,17 +50,17 @@ object OverGW extends OverWebsocket {
       case Seq(JsString(Ping)) => GraphPing()
 
       // Irrelevant JsObject
-      case _ => GraphError(
+      case _ => GraphException(
         "No \"type\" field that properly matches the protocol spec or object schema does not conform to spec"
       )
     }
   } catch {
-    case NonFatal(_) => GraphError(
+    case NonFatal(_) => GraphException(
       "No \"type\" field that properly matches the protocol spec or object schema does not conform to spec"
     )
   }
 
-  def init(ref: Ref) = ref ! ProtoMessage.Empty(_type = ConnectionAck).json
+  def init(ref: Ref) = ref ! OpMsg.Empty(_type = ConnectionAck).json
 
   def next = Next
 

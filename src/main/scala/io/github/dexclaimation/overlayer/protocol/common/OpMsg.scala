@@ -9,20 +9,21 @@
 package io.github.dexclaimation.overlayer.protocol.common
 
 import io.github.dexclaimation.overlayer.model.Subtypes.OID
+import io.github.dexclaimation.overlayer.model.json.Encodable
 import spray.json.{JsObject, JsString, JsValue}
 
 /**
- * Protocol compliant message type
+ * Protocol compliant operation message type
  *
  * @param _type   Operation Type
  * @param id      Given the ID for this operation, if any
  * @param payload Given payload with the operation, if any
  */
-case class ProtoMessage(
+case class OpMsg(
   _type: String,
   id: Option[OID] = None,
   payload: Option[JsValue] = None
-) {
+) extends Encodable {
   /**
    * JSON Of self
    *
@@ -38,30 +39,23 @@ case class ProtoMessage(
     case _ =>
       JsObject("type" -> JsString(_type))
   }
-
-  /**
-   * Json String of self
-   *
-   * @return String
-   */
-  def json: String = jsObject.compactPrint
 }
 
-object ProtoMessage {
+object OpMsg {
 
   /** Protocol compliant full Operation message */
-  def Operation(_type: String, oid: OID, payload: JsValue) =
-    ProtoMessage(_type, Some(oid), Some(payload))
+  def apply(_type: String, oid: OID, payload: JsValue) =
+    OpMsg(_type, Some(oid), Some(payload))
 
   /** Protocol compliant Operation message with no payload */
   def NoPayload(_type: String, oid: OID) =
-    ProtoMessage(_type, Some(oid), None)
+    OpMsg(_type, Some(oid), None)
 
   /** Protocol compliant Operation message with no id */
   def NoID(_type: String, payload: JsValue) =
-    ProtoMessage(_type, payload = Some(payload))
+    OpMsg(_type, payload = Some(payload))
 
   /** Protocol compliant message with just a type */
   def Empty(_type: String) =
-    ProtoMessage(_type)
+    OpMsg(_type)
 }

@@ -25,8 +25,11 @@ object GraphMessage {
   /** GraphQL Operation Stop (''A request ending an operation using the id'') */
   case class GraphStop(oid: OID) extends GraphMessage
 
+  /** GraphQL Operation doesn't met requirement to be understood by the server */
+  case class GraphError(oid: OID, message: String) extends GraphMessage
+
   /** GraphQL Message doesn't met requirement to be understood by the server */
-  case class GraphError(message: String) extends GraphMessage
+  case class GraphException(message: String) extends GraphMessage
 
   /** GraphQL Ping Message checking for alive connection */
   case class GraphPing() extends GraphMessage

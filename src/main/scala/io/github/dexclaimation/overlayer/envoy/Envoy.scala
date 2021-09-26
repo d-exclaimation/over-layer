@@ -10,14 +10,15 @@ package io.github.dexclaimation.overlayer.envoy
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.stream.Materializer.createMaterializer
-import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.{Flow, Keep}
 import akka.stream.typed.scaladsl.ActorSink
-import akka.stream.{KillSwitches, Materializer, UniqueKillSwitch}
+import akka.stream.{KillSwitch, KillSwitches, Materializer}
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
+import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
-import io.github.dexclaimation.overlayer.protocol.common.ProtoMessage
+import io.github.dexclaimation.overlayer.protocol.common.OpMsg
 import io.github.dexclaimation.overlayer.utils.ExceptionUtil.tolerate
 import sangria.ast.Document
 import sangria.execution.ExecutionScheme.Stream
@@ -51,7 +52,7 @@ class Envoy[Ctx, Val](
   implicit private val ex: ExecutionContext = context.executionContext
   implicit private val mat: Materializer = createMaterializer(context)
 
-  private val ops = mutable.Map.empty[OID, UniqueKillSwitch]
+  private val ops = mutable.Map.empty[OID, KillSwitch]
 
   def onMessage(msg: EnvoyMessage): Behavior[EnvoyMessage] = receive(msg) {
     case Subscribe(oid, ast, op, vars) => tolerate {
@@ -62,11 +63,13 @@ class Envoy[Ctx, Val](
           onFailureMessage = _ => Subscribe(oid, ast, op, vars)
         )
 
-      val (_, kill) = executeSchema(ast, op, vars)
-        .map(ProtoMessage.Operation(protocol.next, oid, _))
-        .map(_.json)
+      val flow = Flow[JsValue]
+        .map(OpMsg(protocol.next, oid, _))
         .map(Output(oid, _))
-        .viaMat(KillSwitches.single)(Keep.both)
+
+      val kill = executeSchema(ast, op, vars)
+        .via(flow)
+        .viaMat(KillSwitches.single)(Keep.right)
         .to(sink)
         .run()
 
@@ -78,14 +81,13 @@ class Envoy[Ctx, Val](
     }
 
     case Ended(oid) => ops.get(oid)
-      .foreach { kill =>
-        ref.tell(ProtoMessage.NoPayload(protocol.complete, oid).json)
-        kill.shutdown()
+      .foreach { _ =>
+        ref ? OpMsg.NoPayload(protocol.complete, oid)
         ops.remove(oid)
       }
 
     case Output(oid, data) => tolerate {
-      if (ops.contains(oid)) ref ! data
+      if (ops.contains(oid)) ref ? data
     }
 
     case _ => ()

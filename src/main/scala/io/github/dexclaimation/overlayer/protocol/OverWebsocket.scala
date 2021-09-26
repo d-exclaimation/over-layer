@@ -11,7 +11,7 @@ package io.github.dexclaimation.overlayer.protocol
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphStart}
-import io.github.dexclaimation.overlayer.utils.GraphQLRequestParser
+import io.github.dexclaimation.overlayer.utils.OverGraphQL
 import sangria.ast.OperationType
 import sangria.parser.QueryParser
 import spray.json.{JsString, JsValue}
@@ -42,9 +42,9 @@ trait OverWebsocket {
   def decodeStart(payload: Map[String, JsValue], id: String): GraphMessage = payload
     .get("query")
     .flatMap {
-      case JsString(query) => {
-        val op = GraphQLRequestParser.getOperationName(payload)
-        val variables = GraphQLRequestParser.getVariables(payload)
+      case JsString(query) =>
+        val op = OverGraphQL.getOperationName(payload)
+        val variables = OverGraphQL.getVariables(payload)
 
         val res = QueryParser.parse(query) match {
           case Failure(_) => None
@@ -55,11 +55,11 @@ trait OverWebsocket {
         }
 
         res.map(GraphStart(id, _, op, variables))
-      }
+
       case _ => None
     }
     .getOrElse(
-      GraphError("Cannot perform operation other than subscriptions through websocket")
+      GraphError(id, "Invalid request query or non subscription operation")
     )
 }
 

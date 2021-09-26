@@ -26,7 +26,7 @@ import scala.collection.mutable
  * @param config   The Schema Configuration.
  * @param context  The Actor Context for the Abstract Behavior.
  */
-class ProxyStore[Ctx, Val](
+class Proxy[Ctx, Val](
   val protocol: OverWebsocket,
   val config: SchemaConfig[Ctx, Val],
   override val context: ActorContext[ProxyActions]
@@ -78,7 +78,7 @@ class ProxyStore[Ctx, Val](
   }
 }
 
-object ProxyStore {
+object Proxy {
 
   /**
    * Setup a full Actor behavior using the ProxyStore
@@ -87,6 +87,6 @@ object ProxyStore {
     protocol: OverWebsocket,
     config: SchemaConfig[Ctx, Val]
   ): Behavior[ProxyActions] = {
-    Behaviors.setup(new ProxyStore[Ctx, Val](protocol, config, _))
+    Behaviors.setup(new Proxy[Ctx, Val](protocol, config, _))
   }
 }
