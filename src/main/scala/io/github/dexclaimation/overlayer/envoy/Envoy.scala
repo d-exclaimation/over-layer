@@ -64,7 +64,7 @@ class Envoy[Ctx, Val](
         )
 
       val flow = Flow[JsValue]
-        .map(OpMsg(protocol.next, oid, _))
+        .map(OpMsg.Full(protocol.next, oid, _))
         .map(Output(oid, _))
 
       val kill = executeSchema(ast, op, vars)

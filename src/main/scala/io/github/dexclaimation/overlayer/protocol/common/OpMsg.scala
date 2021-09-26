@@ -44,7 +44,7 @@ case class OpMsg(
 object OpMsg {
 
   /** Protocol compliant full Operation message */
-  def apply(_type: String, oid: OID, payload: JsValue) =
+  def Full(_type: String, oid: OID, payload: JsValue) =
     OpMsg(_type, Some(oid), Some(payload))
 
   /** Protocol compliant Operation message with no payload */

@@ -127,7 +127,7 @@ class OverTransportLayer[Ctx, Val](
 
       case GraphStop(oid) => proxy ! StopOp(pid, oid)
 
-      case GraphError(oid, message) => ref ? OpMsg(protocol.error, oid, JsString(message))
+      case GraphError(oid, message) => ref ? OpMsg.Full(protocol.error, oid, JsString(message))
 
       case GraphException(message) => ref ? OpMsg.NoID(protocol.error, JsString(message))
 
