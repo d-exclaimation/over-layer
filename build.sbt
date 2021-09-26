@@ -10,7 +10,7 @@ ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/d-exclaimation/whiskey"),
-    "scm:git@github.d-exclaimation/whiskey.git"
+    "scm:git@github.d-exclaimation/over-layer.git"
   )
 )
 
@@ -27,7 +27,7 @@ crossPaths := false
 
 ThisBuild / description := "A GraphQL over Websocket Stream-based Subscription Transport Layer on Akka."
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / homepage := Some(url("https://github.com/d-exclaimation/whiskey"))
+ThisBuild / homepage := Some(url("https://overlayer.netlify.app"))
 
 // Remove all additional repository other than Maven Central from POM
 ThisBuild / pomIncludeRepository := { _ => false }
