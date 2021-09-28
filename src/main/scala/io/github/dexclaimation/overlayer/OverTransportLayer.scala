@@ -178,6 +178,7 @@ object OverTransportLayer {
    * @param queryReducers      Query reducers for resolvers.
    * @param timeoutDuration    Idle timeout duration for websocket.
    * @param bufferSize         The websocket client buffer size.
+   * @param keepAlive          The periodical time to send a keep-alive message from server.
    * @param sys                Implicit Actor System with he proper Behavior.
    * @tparam Ctx Context type of the Schema.
    * @tparam Val Root Value type.
@@ -194,6 +195,7 @@ object OverTransportLayer {
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil,
     timeoutDuration: FiniteDuration = 30.seconds,
+    keepAlive: FiniteDuration = 12.seconds,
     bufferSize: Int = 100
   )(implicit sys: ActorSystem[SpawnProtocol.Command]): OverTransportLayer[Ctx, Val] = {
     val config = SchemaConfig(
@@ -202,6 +204,6 @@ object OverTransportLayer {
       deprecationTracker, middleware,
       maxQueryDepth, queryReducers
     )
-    new OverTransportLayer[Ctx, Val](config, protocol, timeoutDuration, bufferSize)
+    new OverTransportLayer[Ctx, Val](config, protocol, timeoutDuration, bufferSize, keepAlive)
   }
 }
