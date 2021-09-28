@@ -110,7 +110,7 @@ class OverTransportLayer[Ctx, Val](
       .to(Sink.onComplete(onEnd(pid)))
 
     val source = Source
-      .combine(Source.fromPublisher(publisher), Source.tick(Duration.Zero, keepAlive, protocol.keepAlive))(Merge(_))
+      .combine(Source.fromPublisher(publisher), Source.tick(keepAlive, keepAlive, protocol.keepAlive))(Merge(_))
 
     Flow
       .fromSinkAndSourceCoupled(sink, source)
