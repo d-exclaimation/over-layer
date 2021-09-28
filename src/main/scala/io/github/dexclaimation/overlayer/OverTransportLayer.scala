@@ -14,9 +14,10 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives.handleWebSocketMessagesForProtocol
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
+import io.github.dexclaimation.overlayer.implicits.StreamExtensions._
 import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.Hooks._
 import io.github.dexclaimation.overlayer.model.Subtypes.{PID, Ref}
@@ -32,7 +33,7 @@ import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.{JsString, JsonParser}
 
-import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 
 /**
@@ -90,27 +91,27 @@ class OverTransportLayer[Ctx, Val](
   def flow(ctx: Ctx): Flow[Message, TextMessage.Strict, _] = {
     val pid = PID()
 
-    val (actorRef, publisher) =
-      ActorSource
-        .actorRef[String](
-          completionMatcher = FaultFunction,
-          failureMatcher = PartialFunction.empty,
-          bufferSize = bufferSize,
-          overflowStrategy = OverflowStrategy.dropHead
-        )
-        .map(TextMessage.Strict)
-        .idleTimeout(timeoutDuration)
-        .toMat(Sink.asPublisher(false))(Keep.both)
-        .run()
+    val (actorRef, publisher) = ActorSource
+      .actorRef[String](
+        completionMatcher = FaultFunction,
+        failureMatcher = PartialFunction.empty,
+        bufferSize = bufferSize,
+        overflowStrategy = OverflowStrategy.dropHead
+      )
+      .map(TextMessage.Strict)
+      .idleTimeout(timeoutDuration)
+      .toMat(Sink.asPublisher(false))(Keep.both)
+      .run()
 
     onInit(pid, actorRef)
 
-    val sink: Sink[Message, Any] = Flow[Message]
-      .map(onMessage(ctx, pid, actorRef))
-      .to(Sink.onComplete(onEnd(pid)))
+    val sink: Sink[Message, Any] = Sink
+      .onComplete[Unit](onEnd(pid))
+      .withBefore(onMessage(ctx, pid, actorRef))
 
     val source = Source
-      .combine(Source.fromPublisher(publisher), Source.tick(keepAlive, keepAlive, protocol.keepAlive))(Merge(_))
+      .fromPublisher(publisher)
+      .also(Source.tick(keepAlive, keepAlive, protocol.keepAlive))
 
     Flow
       .fromSinkAndSourceCoupled(sink, source)
@@ -155,6 +156,16 @@ class OverTransportLayer[Ctx, Val](
 
 
 object OverTransportLayer {
+
+  /**
+   * Create a new ActorSystem that can be used for [[OverTransportLayer]]
+   *
+   * @param name Name of the ActorSystem.
+   * @return A new ActorSystem
+   */
+  def makeSystem(name: String = s"OverSystemLayer-${PID()}"): ActorSystem[SpawnProtocol.Command] = {
+    ActorSystem(behavior, name)
+  }
 
   /**
    * Spawn Behaviour for main actor system
