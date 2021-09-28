@@ -41,8 +41,8 @@ import scala.concurrent.{Await, ExecutionContext}
  * @param protocol        The GraphQL Over Websocket Sub-Protocol.
  * @param timeoutDuration The idle timeout duration.
  * @param bufferSize      The Buffer size of each publishers.
+ * @param keepAlive       The periodical time to send a keep-alive message from server.
  * @param system          ''Implicit'' Actor System that allow for spawning child Actors.
- * @todo Actor Behaviour for client distribution
  */
 class OverTransportLayer[Ctx, Val](
   val config: SchemaConfig[Ctx, Val],
@@ -99,6 +99,7 @@ class OverTransportLayer[Ctx, Val](
           overflowStrategy = OverflowStrategy.dropHead
         )
         .map(TextMessage.Strict)
+        .idleTimeout(timeoutDuration)
         .toMat(Sink.asPublisher(false))(Keep.both)
         .run()
 
@@ -138,6 +139,8 @@ class OverTransportLayer[Ctx, Val](
       case GraphPing() => ref ? OpMsg.Empty("pong")
 
       case GraphTerminate() => ref ! PoisonPill()
+
+      case GraphIgnore() => ()
     }
     case _ => ()
   }

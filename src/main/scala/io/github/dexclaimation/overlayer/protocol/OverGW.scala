@@ -31,6 +31,7 @@ object OverGW extends OverWebsocket {
   private val Complete = "complete"
 
   private val Ping = "ping"
+  private val Pong = "pong"
   private val ConnectionAck = "connection_ack"
   private val ConnectionInit = "connection_init"
 
@@ -49,6 +50,10 @@ object OverGW extends OverWebsocket {
       // Ping operation
       case Seq(JsString(Ping), _: JsObject) => GraphPing()
       case Seq(JsString(Ping)) => GraphPing()
+
+      // Pong operation
+      case Seq(JsString(Pong), _: JsObject) => GraphIgnore()
+      case Seq(JsString(Pong)) => GraphIgnore()
 
       // Irrelevant JsObject
       case _ => GraphException(

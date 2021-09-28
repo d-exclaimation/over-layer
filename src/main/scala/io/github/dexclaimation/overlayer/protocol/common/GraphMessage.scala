@@ -36,4 +36,7 @@ object GraphMessage {
 
   /** GraphQL Request to terminate the entire connection */
   case class GraphTerminate() extends GraphMessage
+
+  /** GraphQL Ignored messages */
+  case class GraphIgnore() extends GraphMessage
 }
