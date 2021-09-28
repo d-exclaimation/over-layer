@@ -8,6 +8,7 @@
 
 package io.github.dexclaimation.overlayer.protocol
 
+import akka.http.scaladsl.model.ws.TextMessage
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphStart}
@@ -22,6 +23,9 @@ import scala.util.{Failure, Success}
 trait OverWebsocket {
   /** Sub protocol name used in Websocket handler */
   def name: String
+
+  /** Periodical message to be sent to keep connection alive */
+  def keepAlive: TextMessage.Strict
 
   /** Custom JSON Decoder to the proper intent */
   def decoder(json: JsValue): GraphMessage

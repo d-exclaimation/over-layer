@@ -7,6 +7,7 @@
 
 package io.github.dexclaimation.overlayer.protocol
 
+import akka.http.scaladsl.model.ws.TextMessage
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
 import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
@@ -66,4 +67,6 @@ object OverSTW extends OverWebsocket {
   def complete = GQL_COMPLETE
 
   def error = GQL_ERROR
+
+  def keepAlive = TextMessage.Strict(OpMsg.Empty(GQL_CONNECTION_KEEP_ALIVE).json)
 }

@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives.handleWebSocketMessagesForProtocol
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
 import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
@@ -25,14 +25,14 @@ import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
 import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
 import io.github.dexclaimation.overlayer.proxy.ProxyActions.{Connect, Disconnect, StartOp, StopOp}
-import io.github.dexclaimation.overlayer.proxy.{ProxyActions, Proxy}
+import io.github.dexclaimation.overlayer.proxy.{Proxy, ProxyActions}
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, QueryReducer}
 import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.{JsString, JsonParser}
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 
 /**
@@ -48,11 +48,12 @@ class OverTransportLayer[Ctx, Val](
   val config: SchemaConfig[Ctx, Val],
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
   val timeoutDuration: FiniteDuration = 30.seconds,
-  val bufferSize: Int = 32
+  val bufferSize: Int = 32,
+  val keepAlive: FiniteDuration = 12.seconds,
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
 
   // --- Implicits ---
-  implicit private val keepAlive: Timeout = Timeout(timeoutDuration)
+  implicit private val timed: Timeout = Timeout(timeoutDuration)
   implicit private val ex: ExecutionContext = system.executionContext
 
 
@@ -98,7 +99,6 @@ class OverTransportLayer[Ctx, Val](
           overflowStrategy = OverflowStrategy.dropHead
         )
         .map(TextMessage.Strict)
-        .idleTimeout(timeoutDuration)
         .toMat(Sink.asPublisher(false))(Keep.both)
         .run()
 
@@ -108,7 +108,11 @@ class OverTransportLayer[Ctx, Val](
       .map(onMessage(ctx, pid, actorRef))
       .to(Sink.onComplete(onEnd(pid)))
 
-    Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
+    val source = Source
+      .combine(Source.fromPublisher(publisher), Source.tick(Duration.Zero, keepAlive, protocol.keepAlive))(Merge(_))
+
+    Flow
+      .fromSinkAndSourceCoupled(sink, source)
   }
 
 
