@@ -5,11 +5,11 @@ scalaVersion := "2.13.3"
 
 ThisBuild / name := "over-layer"
 ThisBuild / organization := "io.github.d-exclaimation"
-ThisBuild / version := "0.1.6"
+ThisBuild / version := "0.1.7"
 ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/d-exclaimation/whiskey"),
+    url("https://github.com/d-exclaimation/over-layer"),
     "scm:git@github.d-exclaimation/over-layer.git"
   )
 )

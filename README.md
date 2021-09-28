@@ -8,7 +8,7 @@ A GraphQL over Websocket Stream-based Subscription Transport Layer on Akka.
 
 ## Setup
 
-**Latest Version**: `0.1.6`
+**Latest Version**: `0.1.7`
 
 ```sbt
 "io.github.d-exclaimation" % "over-layer" % latestVersion
@@ -33,4 +33,7 @@ sub-protocol format using Akka Actors.
 - [subscriptions-transport-ws](https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md)
 - [graphql-ws](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md)
 
- 
+
+### Feedback
+
+If you have any feedback, feel free to reach out through the issues tab or through my Twitter [@d_exclaimation](https://twitter.com/d_exclaimation).
