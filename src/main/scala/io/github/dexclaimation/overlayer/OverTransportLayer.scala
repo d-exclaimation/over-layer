@@ -33,7 +33,7 @@ import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.JsonParser
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 
 /**
@@ -48,13 +48,13 @@ import scala.concurrent.{Await, ExecutionContext}
 class OverTransportLayer[Ctx, Val](
   val config: SchemaConfig[Ctx, Val],
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
-  val timeoutDuration: FiniteDuration = 60.seconds,
+  val timeoutDuration: Duration = Duration.Inf,
   val bufferSize: Int = 128,
   val keepAlive: FiniteDuration = 12.seconds,
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
 
   // --- Implicits ---
-  implicit private val timed: Timeout = Timeout(timeoutDuration)
+  implicit private val timed: Timeout = Timeout(10.seconds)
   implicit private val ex: ExecutionContext = system.executionContext
 
 
@@ -99,7 +99,7 @@ class OverTransportLayer[Ctx, Val](
         overflowStrategy = OverflowStrategy.dropHead
       )
       .map(TextMessage.Strict)
-      .idleTimeout(timeoutDuration)
+      .idleIfFinite(timeoutDuration)
       .toMat(Sink.asPublisher(false))(Keep.both)
       .run()
 
@@ -126,35 +126,26 @@ class OverTransportLayer[Ctx, Val](
   /** onMessage Hook */
   private def onMessage(ctx: Any, pid: String, ref: Ref): MessageHook = {
     case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
-      case GraphInit() =>
-        onInit(pid, ref)
+      case GraphInit() => onInit(pid, ref)
 
-      case GraphStart(oid, ast, op, vars) =>
-        engine ! StartOp(pid, oid, ast, ctx, op, vars)
+      case GraphStart(oid, ast, op, vars) => engine ! StartOp(pid, oid, ast, ctx, op, vars)
 
-      case GraphImmediate(oid, ast, op, vars) =>
-        engine ! StatelessOp(pid, oid, ast, ctx, op, vars)
+      case GraphImmediate(oid, ast, op, vars) => engine ! StatelessOp(pid, oid, ast, ctx, op, vars)
 
-      case GraphStop(oid) =>
-        engine ! StopOp(pid, oid)
+      case GraphStop(oid) => engine ! StopOp(pid, oid)
 
-      case GraphError(oid, message) =>
-        ref <~ OperationMessage(protocol.error, oid, GqlError.of(message))
+      case GraphError(oid, message) => ref <~ OperationMessage(protocol.error, oid, GqlError.of(message))
 
-      case GraphException(message) =>
-        ref <~ OperationMessage(protocol.error, "4400", GqlError.of(message))
+      case GraphException(message) => ref <~ OperationMessage(protocol.error, "4400", GqlError.of(message))
 
-      case GraphPing() =>
-        ref <~ OperationMessage.just("pong")
+      case GraphPing() => ref <~ OperationMessage.just("pong")
 
-      case GraphTerminate() =>
-        ref ! PoisonPill()
+      case GraphTerminate() => ref ! PoisonPill()
 
       case GraphIgnore() => ()
     }
     case _ => ()
   }
-
 
   /** onEnd Hook */
   private def onEnd(pid: String): EndHook = { _ =>
@@ -214,7 +205,7 @@ object OverTransportLayer {
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-    timeoutDuration: FiniteDuration = 60.seconds,
+    timeoutDuration: Duration = Duration.Inf,
     keepAlive: FiniteDuration = 12.seconds,
     bufferSize: Int = 128
   )(implicit sys: ActorSystem[SpawnProtocol.Command]): OverTransportLayer[Ctx, Val] = {

@@ -10,6 +10,7 @@
 - Updated `OverEngine` to be able to execute operation and pipe result back to self with proper error handling.
 - Kill / Terminate connection on `GraphException`.
 - Moved `onInit` to wait after acknowledgement.
+- Updated `timeoutDuration` to allow `Duration.Inf` which will remove timeout.
 
 ### v0.1.8
 
