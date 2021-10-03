@@ -15,20 +15,22 @@ import akka.stream.typed.scaladsl.ActorSink
 import akka.stream.{KillSwitch, KillSwitches, Materializer}
 import io.github.dexclaimation.overlayer.envoy.EnvoyMessage._
 import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
+import io.github.dexclaimation.overlayer.model.Hooks.Hook
 import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
-import io.github.dexclaimation.overlayer.protocol.common.OpMsg
+import io.github.dexclaimation.overlayer.protocol.common.{GqlError, OperationMessage}
 import io.github.dexclaimation.overlayer.utils.ExceptionUtil.tolerate
 import sangria.ast.Document
 import sangria.execution.ExecutionScheme.Stream
-import sangria.execution.Executor
+import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
 import sangria.marshalling.sprayJson._
 import sangria.streaming.akkaStreams._
 import spray.json.{JsObject, JsValue}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 /**
  * Envoy Actor for handling specific operation stream for one websocket client.
@@ -64,8 +66,9 @@ class Envoy[Ctx, Val](
         )
 
       val flow = Flow[JsValue]
-        .map(OpMsg.Full(protocol.next, oid, _))
-        .map(Output(oid, _))
+        .map(OperationMessage(protocol.next, oid, _))
+        .recover(onRecover(oid))
+        .map(onResult(oid))
 
       val kill = executeSchema(ast, op, vars)
         .via(flow)
@@ -82,17 +85,21 @@ class Envoy[Ctx, Val](
 
     case Ended(oid) => ops.get(oid)
       .foreach { _ =>
-        ref ? OpMsg.NoPayload(protocol.complete, oid)
+        ref <~ OperationMessage(protocol.complete, oid)
         ops.remove(oid)
       }
 
     case Output(oid, data) => tolerate {
-      if (ops.contains(oid)) ref ? data
+      if (ops.contains(oid)) ref <~ data
+    }
+
+    case Faults(oid, data) => tolerate {
+      ref <~ data
+      ops.remove(oid)
     }
 
     case _ => ()
   }
-
 
   private def receive(msg: EnvoyMessage)(handler: EnvoyMessage => Unit): Behavior[EnvoyMessage] = msg match {
     case Acid() =>
@@ -103,6 +110,16 @@ class Envoy[Ctx, Val](
     case notStop =>
       handler(notStop)
       this
+  }
+
+  private def onResult(oid: OID): Hook[OperationMessage, EnvoyMessage] = { result =>
+    if (result._type == protocol.next) Output(oid, result) else Faults(oid, result)
+  }
+
+  private def onRecover(oid: OID): PartialFunction[Throwable, OperationMessage] = {
+    case e: QueryAnalysisError => OperationMessage(protocol.error, oid, e.resolveError)
+    case e: ErrorWithResolver => OperationMessage(protocol.error, oid, e.resolveError)
+    case NonFatal(e) => OperationMessage(protocol.error, oid, GqlError.of(e.getMessage))
   }
 
   private def executeSchema(ast: Document, op: Option[String], vars: JsObject): AkkaSource[JsValue] = Executor

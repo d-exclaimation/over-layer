@@ -7,6 +7,7 @@
 
 package io.github.dexclaimation.overlayer.implicits
 
+import akka.http.scaladsl.model.ws.TextMessage
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.model.json.Encodable
 
@@ -30,6 +31,13 @@ object WebsocketExtensions {
      *
      * @param encodable Incoming json encodable data
      */
-    def ?(encodable: Encodable): Unit = ref.tell(encodable.json)
+    def <~(encodable: Encodable): Unit = ref.tell(encodable.json)
+  }
+
+
+  /** Encodable Message Extensions */
+  implicit class ExtendEncodable(en: Encodable) {
+    /** Encode into text message strict */
+    def textMessage: TextMessage.Strict = TextMessage.Strict(en.json)
   }
 }

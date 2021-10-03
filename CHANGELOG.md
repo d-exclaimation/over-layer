@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.2
+
+- Renamed `Proxy` to `OverEngine`.
+- Added multiple new message types for error and output handling for `Envoy` and `OverEngine`.
+- Added throughout `recover` for error handling for both future and stream results.
+- Updated `OperationMessage`, Added `GqlError` for proper error formats.
+- Added capabilities to respond to non streaming operation using `GraphImmediate` and `StatelessOp`.
+
 ### v0.1.8
 
 - Fixed keepAlive mechanism to not send initially (immediately) as was suppose to be handled by `OverWebsocket`'s `init` method.

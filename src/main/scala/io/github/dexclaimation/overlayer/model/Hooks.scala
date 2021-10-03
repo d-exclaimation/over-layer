@@ -22,4 +22,8 @@ object Hooks {
 
   /** End Connection Event Hook */
   type EndHook = Try[Done] => Unit
+
+
+  /** Function Hook */
+  type Hook[In, Out] = In => Out
 }

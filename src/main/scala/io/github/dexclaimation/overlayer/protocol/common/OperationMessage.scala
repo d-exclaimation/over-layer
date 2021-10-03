@@ -19,7 +19,7 @@ import spray.json.{JsObject, JsString, JsValue}
  * @param id      Given the ID for this operation, if any
  * @param payload Given payload with the operation, if any
  */
-case class OpMsg(
+case class OperationMessage(
   _type: String,
   id: Option[OID] = None,
   payload: Option[JsValue] = None
@@ -41,21 +41,17 @@ case class OpMsg(
   }
 }
 
-object OpMsg {
+object OperationMessage {
 
   /** Protocol compliant full Operation message */
-  def Full(_type: String, oid: OID, payload: JsValue) =
-    OpMsg(_type, Some(oid), Some(payload))
+  def apply(_type: String, oid: OID, payload: JsValue) =
+    new OperationMessage(_type, Some(oid), Some(payload))
 
   /** Protocol compliant Operation message with no payload */
-  def NoPayload(_type: String, oid: OID) =
-    OpMsg(_type, Some(oid), None)
-
-  /** Protocol compliant Operation message with no id */
-  def NoID(_type: String, payload: JsValue) =
-    OpMsg(_type, payload = Some(payload))
+  def apply(_type: String, oid: OID) =
+    new OperationMessage(_type, Some(oid), None)
 
   /** Protocol compliant message with just a type */
-  def Empty(_type: String) =
-    OpMsg(_type)
+  def just(_type: String) =
+    new OperationMessage(_type)
 }
