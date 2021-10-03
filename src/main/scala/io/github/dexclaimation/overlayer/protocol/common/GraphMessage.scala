@@ -22,6 +22,9 @@ object GraphMessage {
   /** GraphQL Operation Start (''A new operation with an id is being requested'') */
   case class GraphStart(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
 
+  /** GraphQL Operation Request (''A new operation with an id is being requested'') */
+  case class GraphImmediate(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
+
   /** GraphQL Operation Stop (''A request ending an operation using the id'') */
   case class GraphStop(oid: OID) extends GraphMessage
 

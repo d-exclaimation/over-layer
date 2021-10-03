@@ -10,9 +10,11 @@ package io.github.dexclaimation.overlayer.implicits
 import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Merge, Sink, Source}
 
+import scala.concurrent.duration.{Duration, FiniteDuration}
+
 object StreamExtensions {
   /** Source Extensions */
-  implicit class SourceExtensions[Out](firstSource: Source[Out, _]) {
+  implicit class SourceExtensions[Out, Mat](firstSource: Source[Out, Mat]) {
     /**
      * Add additional output Source stream to an existing one,
      * with a single completion strategy.
@@ -20,6 +22,11 @@ object StreamExtensions {
     def also(secondSource: Source[Out, _]): Source[Out, NotUsed] =
       Source
         .combine(firstSource, secondSource)(Merge(_, eagerComplete = true))
+
+    def idleIfFinite(duration: Duration): Source[Out, Mat] = duration match {
+      case _: Duration.Infinite => firstSource
+      case finite: FiniteDuration => firstSource.idleTimeout(finite)
+    }
   }
 
   /** Sink Extensions */

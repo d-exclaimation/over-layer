@@ -8,7 +8,7 @@
 package io.github.dexclaimation.overlayer.envoy
 
 import io.github.dexclaimation.overlayer.model.Subtypes.OID
-import io.github.dexclaimation.overlayer.protocol.common.OpMsg
+import io.github.dexclaimation.overlayer.protocol.common.OperationMessage
 import sangria.ast.Document
 import spray.json.JsObject
 
@@ -26,7 +26,10 @@ object EnvoyMessage {
   case class Ended(oid: OID) extends EnvoyMessage
 
   /** Envoy Outgoing data concurrent safe handler by sending back to the mailbox */
-  case class Output(oid: OID, data: OpMsg) extends EnvoyMessage
+  case class Output(oid: OID, data: OperationMessage) extends EnvoyMessage
+
+  /** Envoy Outgoing data concurrent safe handler by sending back to the mailbox */
+  case class Faults(oid: OID, data: OperationMessage) extends EnvoyMessage
 
   /** Envoy Kill / PoisonPill Intent */
   case class Acid() extends EnvoyMessage

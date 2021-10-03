@@ -11,7 +11,7 @@ package io.github.dexclaimation.overlayer.protocol
 import akka.http.scaladsl.model.ws.TextMessage
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
-import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphStart}
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphImmediate, GraphStart}
 import io.github.dexclaimation.overlayer.utils.OverGraphQL
 import sangria.ast.OperationType
 import sangria.parser.QueryParser
@@ -50,16 +50,13 @@ trait OverWebsocket {
         val op = OverGraphQL.getOperationName(payload)
         val variables = OverGraphQL.getVariables(payload)
 
-        val res = QueryParser.parse(query) match {
+        QueryParser.parse(query) match {
           case Failure(_) => None
-          case Success(ast) => ast.operation(op).map(_.operationType).flatMap {
-            case OperationType.Subscription => Some(ast)
-            case _ => None
+          case Success(ast) => ast.operation(op).map(_.operationType).map {
+            case OperationType.Subscription => GraphStart(id, ast, op, variables)
+            case _ => GraphImmediate(id, ast, op, variables)
           }
         }
-
-        res.map(GraphStart(id, _, op, variables))
-
       case _ => None
     }
     .getOrElse(

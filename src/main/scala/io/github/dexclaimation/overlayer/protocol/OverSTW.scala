@@ -7,10 +7,10 @@
 
 package io.github.dexclaimation.overlayer.protocol
 
-import akka.http.scaladsl.model.ws.TextMessage
+import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
-import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OpMsg}
+import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OperationMessage}
 import spray.json.{JsObject, JsString, JsValue}
 
 import scala.util.control.NonFatal
@@ -58,8 +58,8 @@ object OverSTW extends OverWebsocket {
   }
 
   def init(ref: Ref): Unit = {
-    ref ! OpMsg.Empty(_type = GQL_CONNECTION_ACK).json
-    ref ! OpMsg.Empty(_type = GQL_CONNECTION_KEEP_ALIVE).json
+    ref <~ OperationMessage.just(_type = GQL_CONNECTION_ACK)
+    ref <~ OperationMessage.just(_type = GQL_CONNECTION_KEEP_ALIVE)
   }
 
   def next = GQL_DATA
@@ -68,5 +68,5 @@ object OverSTW extends OverWebsocket {
 
   def error = GQL_ERROR
 
-  def keepAlive = TextMessage.Strict(OpMsg.Empty(GQL_CONNECTION_KEEP_ALIVE).json)
+  def keepAlive = OperationMessage.just(GQL_CONNECTION_KEEP_ALIVE).textMessage
 }
