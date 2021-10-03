@@ -8,7 +8,7 @@ A GraphQL over Websocket Stream-based Subscription Transport Layer on Akka.
 
 ## Setup
 
-**Latest Version**: `0.2.0`
+**Latest Version**: `0.2.1`
 
 ```sbt
 "io.github.d-exclaimation" % "over-layer" % latestVersion

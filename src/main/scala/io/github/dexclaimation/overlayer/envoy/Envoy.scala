@@ -117,8 +117,8 @@ class Envoy[Ctx, Val](
   }
 
   private def onRecover(oid: OID): PartialFunction[Throwable, OperationMessage] = {
-    case e: QueryAnalysisError => OperationMessage(protocol.error, oid, e.resolveError)
-    case e: ErrorWithResolver => OperationMessage(protocol.error, oid, e.resolveError)
+    case e: QueryAnalysisError => OperationMessage(protocol.next, oid, e.resolveError)
+    case e: ErrorWithResolver => OperationMessage(protocol.next, oid, e.resolveError)
     case NonFatal(e) => OperationMessage(protocol.error, oid, GqlError.of(e.getMessage))
   }
 

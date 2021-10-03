@@ -70,8 +70,7 @@ class OverEngine[Ctx, Val](
     case StatelessOp(pid, oid, ast, ctx, op, vars) => refs.get(pid).foreach { ref =>
       context.pipeToSelf(execute(oid, ast, ctx, op, vars)) {
         case Failure(e) => OutError(ref, OperationMessage(protocol.error, oid, GqlError.of(e.getMessage)))
-        case Success(false -> value) => OutError(ref, value)
-        case Success(true -> value) => Outgoing(oid, ref, value)
+        case Success(value) => Outgoing(oid, ref, value)
       }
     }
 
@@ -98,7 +97,7 @@ class OverEngine[Ctx, Val](
     ctx: Any,
     operation: Option[String],
     vars: JsObject
-  ): Future[(Boolean, OperationMessage)] = Executor
+  ): Future[OperationMessage] = Executor
     .execute(
       schema = config.schema,
       queryAst = queryAst,
@@ -114,10 +113,10 @@ class OverEngine[Ctx, Val](
       maxQueryDepth = config.maxQueryDepth,
       queryReducers = config.queryReducers,
     )
-    .map(result => true -> OperationMessage(protocol.next, oid, result))
+    .map(result => OperationMessage(protocol.next, oid, result))
     .recover {
-      case error: QueryAnalysisError => false -> OperationMessage(protocol.error, oid, error.resolveError)
-      case error: ErrorWithResolver => false -> OperationMessage(protocol.error, oid, error.resolveError)
+      case error: QueryAnalysisError => OperationMessage(protocol.error, oid, error.resolveError)
+      case error: ErrorWithResolver => OperationMessage(protocol.error, oid, error.resolveError)
     }
 
 }

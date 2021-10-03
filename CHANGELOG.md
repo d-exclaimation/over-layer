@@ -1,5 +1,10 @@
 # CHANGELOG
 
+### v0.2.1
+
+- Fixed issue with error before and after execution, where before goes as `GQL_ERROR` / `Error`, but after goes
+  as `GQL_DATA` / `Next`.
+
 ## v0.2
 
 - Renamed `Proxy` to `OverEngine`.
