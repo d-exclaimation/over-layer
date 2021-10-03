@@ -6,11 +6,15 @@
 - Added multiple new message types for error and output handling for `Envoy` and `OverEngine`.
 - Added throughout `recover` for error handling for both future and stream results.
 - Updated `OperationMessage`, Added `GqlError` for proper error formats.
-- Added capabilities to respond to non streaming operation using `GraphImmediate` and `StatelessOp`.
+- Added capabilities to respond to non-streaming operation using `GraphImmediate` and `StatelessOp`.
+- Updated `OverEngine` to be able to execute operation and pipe result back to self with proper error handling.
+- Kill / Terminate connection on `GraphException`.
+- Moved `onInit` to wait after acknowledgement.
 
 ### v0.1.8
 
-- Fixed keepAlive mechanism to not send initially (immediately) as was suppose to be handled by `OverWebsocket`'s `init` method.
+- Fixed keepAlive mechanism to not send initially (immediately) as was suppose to be handled by `OverWebsocket`'s `init`
+  method.
 
 ### v0.1.7
 
@@ -22,17 +26,21 @@
 ### v0.1.6
 
 - Fixed GraphQL Error for ending subscription's operations.
-- Moved `PoisonPill` matcher to `completionMatcher` from `failureMatcher` for Websocket's `Ref` to remove unnecessary exceptions.
+- Moved `PoisonPill` matcher to `completionMatcher` from `failureMatcher` for Websocket's `Ref` to remove unnecessary
+  exceptions.
 - Added abstractions to pass `OpMsg` to `ActorRef[String]` / Websocket's `Ref`.
 - Added utilities for responding to HTTP POST Request.
 
 ### v0.1.5
 
 - Fixed timeouts for `OverTransportLayer` flow creation.
-- Added timeouts for graphql subscriptions streams. Added logic to resubscribe on completed failure and pipe back to `Envoy`.
+- Added timeouts for graphql subscriptions streams. Added logic to resubscribe on completed failure and pipe back
+  to `Envoy`.
 - Removed the used of future from `SpawnProtocol` and unwrap immediately.
 
 ## v0.1.0
 
-First working and published transport layer for akka-http and sangria-graphql over websocket using `subscriptions-transport-ws` and `graphql-ws`. Mostly code implementation are aligned and derived from [`whiskey`](https://www.github.com/d-exclaimation/whiskey) package. 
+First working and published transport layer for akka-http and sangria-graphql over websocket
+using `subscriptions-transport-ws` and `graphql-ws`. Mostly code implementation are aligned and derived
+from [`whiskey`](https://www.github.com/d-exclaimation/whiskey) package. 
 

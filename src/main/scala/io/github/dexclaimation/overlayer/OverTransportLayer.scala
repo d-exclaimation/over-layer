@@ -17,6 +17,8 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
+import io.github.dexclaimation.overlayer.engine.OverActions._
+import io.github.dexclaimation.overlayer.engine.{OverActions, OverEngine}
 import io.github.dexclaimation.overlayer.implicits.StreamExtensions._
 import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.Hooks._
@@ -25,8 +27,6 @@ import io.github.dexclaimation.overlayer.model.{PoisonPill, SchemaConfig}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
 import io.github.dexclaimation.overlayer.protocol.common.{GqlError, GraphMessage, OperationMessage}
-import io.github.dexclaimation.overlayer.engine.OverActions._
-import io.github.dexclaimation.overlayer.engine.{OverActions, OverEngine}
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, QueryReducer}
 import sangria.schema.Schema
@@ -48,8 +48,8 @@ import scala.concurrent.{Await, ExecutionContext}
 class OverTransportLayer[Ctx, Val](
   val config: SchemaConfig[Ctx, Val],
   val protocol: OverWebsocket = OverWebsocket.subscriptionsTransportWs,
-  val timeoutDuration: FiniteDuration = 30.seconds,
-  val bufferSize: Int = 32,
+  val timeoutDuration: FiniteDuration = 60.seconds,
+  val bufferSize: Int = 128,
   val keepAlive: FiniteDuration = 12.seconds,
 )(implicit system: ActorSystem[SpawnProtocol.Command]) extends OverComposite {
 
@@ -214,9 +214,9 @@ object OverTransportLayer {
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-    timeoutDuration: FiniteDuration = 30.seconds,
+    timeoutDuration: FiniteDuration = 60.seconds,
     keepAlive: FiniteDuration = 12.seconds,
-    bufferSize: Int = 100
+    bufferSize: Int = 128
   )(implicit sys: ActorSystem[SpawnProtocol.Command]): OverTransportLayer[Ctx, Val] = {
     val config = SchemaConfig(
       schema, root, queryValidator,
