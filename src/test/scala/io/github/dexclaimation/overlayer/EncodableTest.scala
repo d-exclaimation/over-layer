@@ -47,7 +47,9 @@ class EncodableTest extends AnyWordSpec with Matchers {
       "be able to return json string" in {
         (op1 :: op2 :: op3 :: Nil)
           .map(_.json)
-          .foreach(json => assert(json.contains("{") && json.contains("type")))
+          .foreach {
+            json => assert(json.contains("{") && json.contains("type"))
+          }
       }
     }
   }

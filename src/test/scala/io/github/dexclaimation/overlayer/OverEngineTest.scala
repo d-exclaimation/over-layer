@@ -26,11 +26,7 @@ import spray.json.{JsNull, JsObject, JsString}
 
 import scala.concurrent.duration.DurationInt
 
-class OverEngineTest
-  extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+class OverEngineTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   val base = ActorTestKit()
   implicit val system: ActorSystem[_] = base.system
@@ -128,19 +124,4 @@ class OverEngineTest
     super.afterAll()
     base.shutdownTestKit()
   }
-
-  def useEnvironment(completeOn: String => Boolean, messages: CustomTestInbox => Seq[OverActions])
-    (fn: CustomTestInbox => Unit): Unit = {
-    val inbox = new CustomTestInbox(completeOn)
-    val testKit = base.spawn(OverEngine.behavior(OverWebsocket.graphqlWs, SchemaConfig(schema, ())))
-    messages.apply(inbox).foreach(testKit.tell)
-
-    inbox.await()
-
-    fn(inbox)
-
-    inbox.shutdown()
-    base.stop(testKit, 20.seconds)
-  }
-
 }

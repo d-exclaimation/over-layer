@@ -35,10 +35,7 @@ class EnvoyTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with Be
   implicit val ex: ExecutionContext = system.executionContext
 
   val schema = {
-    def delayed() = Future {
-      Thread.sleep(500)
-      "Hello"
-    }
+    def delayed(): Future[String] = Future(Thread.sleep(500)).map(_ => "Hello")
 
     val q = ObjectType("Query", fields[Unit, Unit](Field("test", StringType, resolve = _ => "Test")))
     val s = ObjectType("Query",

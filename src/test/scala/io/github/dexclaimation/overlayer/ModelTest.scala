@@ -14,9 +14,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class ModelTest extends AnyWordSpec with Matchers {
 
-  "Custom string-based models" when {
+  "Custom string-based models" that {
 
-    "PoisonPill" should {
+    "is PoisonPill" should {
 
       "return the proper pattern when applied" in {
         PoisonPill() match {
@@ -34,7 +34,7 @@ class ModelTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "PID" should {
+    "is PID" should {
 
       "return a random unique ID for each websocket process" in {
         val process1 = PID()

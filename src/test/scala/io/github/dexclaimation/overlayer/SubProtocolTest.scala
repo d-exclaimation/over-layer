@@ -9,19 +9,13 @@ package io.github.dexclaimation.overlayer
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorSystem
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Keep, Sink}
-import akka.stream.typed.scaladsl.ActorSource
-import io.github.dexclaimation.overlayer.model.Subtypes.Ref
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.{GraphMessage, OperationMessage}
+import io.github.dexclaimation.overlayer.utils.CustomTestInbox
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json._
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -65,12 +59,13 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         val initReq = JsonParser(OperationMessage.just(GQL_CONNECTION_INIT).json)
         protocol.decoder(initReq) match {
           case GraphMessage.GraphInit() =>
-            val (actorRef, fut) = makeRef(Sink.seq)
+            val inbox = new CustomTestInbox(_.contains("stop"))
 
-            protocol.init(actorRef)
-            delay(10)(actorRef.tell("stop"))
+            protocol.init(inbox.ref)
+            inbox.ref ! "stop"
 
-            val res = Await.result(fut, Duration.Inf)
+            inbox.await()
+            val res = inbox.receiveAll().slice(0, 2)
 
             assertResult(2)(res.length)
             assert(res.map(_.contains("type")).reduce(_ && _))
@@ -142,12 +137,13 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "return GraphInit" in {
         decode(protocol, OperationMessage.just(ConnectionInit).json) {
           case GraphMessage.GraphInit() =>
-            val (actorRef, fut) = makeRef(Sink.seq)
+            val inbox = new CustomTestInbox(_.contains("stop"))
 
-            protocol.init(actorRef)
-            delay(10)(actorRef.tell("stop"))
+            protocol.init(inbox.ref)
+            inbox.ref ! "stop"
+            inbox.await()
 
-            val Seq(res) = Await.result(fut, Duration.Inf)
+            val res = inbox.receiveAll().head
 
             assert(res.contains("type"))
 
@@ -200,13 +196,4 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   def decode(protocol: OverWebsocket, req: String)(fn: GraphMessage => Unit): Unit =
     fn(protocol.decoder(JsonParser(req)))
 
-  def makeRef[T](sink: Sink[String, T]): (Ref, T) = ActorSource
-    .actorRef[String]({ case "stop" => () }, PartialFunction.empty, 10, OverflowStrategy.dropHead)
-    .toMat(sink)(Keep.both)
-    .run()
-
-  def delay[T](m: Long)(fn: => T): T = {
-    Thread.sleep(m)
-    fn
-  }
 }
