@@ -1,5 +1,13 @@
 # CHANGELOG
 
+### v0.2.2
+
+- Fixed issue with sub-protocol error message to be user understandable.
+- Deprecated functions that are being replaced, unused, or that have no relation to the package.
+- Replaced old query parser `decodeStart` that use `Option` with `parse` that use `Try` to allow error message to be
+  preserved.
+- Added utilities for `SpawnProtocol` and `AskPattern`.
+
 ### v0.2.1
 
 - Fixed issue with error before and after execution, where before goes as `GQL_ERROR` / `Error`, but after goes
