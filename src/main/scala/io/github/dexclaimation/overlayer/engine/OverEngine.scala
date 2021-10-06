@@ -17,7 +17,7 @@ import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes._
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.{GqlError, OperationMessage}
-import io.github.dexclaimation.overlayer.utils.ExceptionUtil.tolerate
+import io.github.dexclaimation.overlayer.utils.ExceptionUtil.safe
 import sangria.ast
 import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
 import sangria.marshalling.sprayJson._
@@ -50,11 +50,13 @@ class OverEngine[Ctx, Val](
 
   def onMessage(msg: OverActions): Behavior[OverActions] = receive(msg) {
     case Connect(pid, ref) => refs.update(pid, ref)
-    case Disconnect(pid) => tolerate {
+
+    case Disconnect(pid) => safe {
       refs.remove(pid)
       envoys.get(pid).foreach(_ ! Acid())
       envoys.remove(pid)
     }
+
     case StartOp(pid, oid, ast, ctx, op, vars) => refs.get(pid).foreach { ref =>
       val envoy = envoys.getOrElse(pid,
         context.spawn(
@@ -78,12 +80,14 @@ class OverEngine[Ctx, Val](
       .get(pid)
       .foreach(_ ! Unsubscribe(oid))
 
-    case Outgoing(oid, ref, en) =>
+    case Outgoing(oid, ref, en) => safe {
       ref <~ en
       ref <~ OperationMessage(protocol.complete, oid)
+    }
 
-    case OutError(ref, en) =>
+    case OutError(ref, en) => safe {
       ref <~ en
+    }
   }
 
   private def receive(msg: OverActions)(handler: OverActions => Unit): Behavior[OverActions] = {

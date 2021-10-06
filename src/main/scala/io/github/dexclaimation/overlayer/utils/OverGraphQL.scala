@@ -23,12 +23,14 @@ import scala.util.{Failure, Success}
 
 object OverGraphQL {
   /** Get Variables from the request as Object */
+  @deprecated("use 'JsValueExtensions' instead")
   def getVariables(fields: Map[String, JsValue]): JsObject = fields.get("variables") match {
     case Some(o: JsObject) => o
     case _ => JsObject.empty
   }
 
   /** Get Operation Name from request */
+  @deprecated("use 'JsValueExtensions' instead")
   def getOperationName(fields: Map[String, JsValue]): Option[String] = fields
     .get("operationName")
     .collect {
@@ -53,6 +55,9 @@ object OverGraphQL {
    * @param queryReducers      Query reducers for resolvers.
    * @return A ''*mostly exception-less'' Future of Status Code with a response JsValue.
    */
+  @deprecated(
+    "This method is being deprecated and removed, follow along sangria.github.io guide for your own implementation"
+  )
   def handle[Ctx, Val: ClassTag](
     js: JsValue,
     schema: Schema[Ctx, Val],

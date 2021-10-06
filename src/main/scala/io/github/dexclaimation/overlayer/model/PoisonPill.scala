@@ -13,6 +13,10 @@ package io.github.dexclaimation.overlayer.model
 object PoisonPill {
   val Pattern = "@Websocket.Message.PoisonPill"
 
+  val partialFunction: PartialFunction[String, Unit] = {
+    case Pattern => ()
+  }
+
   /**
    * Create a new Poison Pill using the proper pattern.
    *

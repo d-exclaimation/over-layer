@@ -8,7 +8,7 @@
 package io.github.dexclaimation.overlayer
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives.handleWebSocketMessagesForProtocol
@@ -18,7 +18,8 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.Timeout
 import io.github.dexclaimation.overlayer.engine.OverActions._
-import io.github.dexclaimation.overlayer.engine.{OverActions, OverEngine}
+import io.github.dexclaimation.overlayer.engine.OverEngine
+import io.github.dexclaimation.overlayer.implicits.ActorExtensions._
 import io.github.dexclaimation.overlayer.implicits.StreamExtensions._
 import io.github.dexclaimation.overlayer.implicits.WebsocketExtensions._
 import io.github.dexclaimation.overlayer.model.Hooks._
@@ -33,8 +34,8 @@ import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.JsonParser
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
-import scala.concurrent.{Await, ExecutionContext}
 
 /**
  * GraphQL Transport Layer for handling distributed websocket based subscription.
@@ -58,19 +59,10 @@ class OverTransportLayer[Ctx, Val](
   implicit private val ex: ExecutionContext = system.executionContext
 
 
-  private val engine = {
-    val spawn = (rep: ActorRef[ActorRef[OverActions]]) => SpawnProtocol.Spawn(
-      behavior = OverEngine.behavior[Ctx, Val](protocol, config),
-      name = "ProxyStore",
-      props = Props.empty,
-      replyTo = rep
-    )
-    Await.result(system.ask(spawn), timeoutDuration)
-  }
-
-  private val FaultFunction: PartialFunction[String, Unit] = {
-    case PoisonPill.Pattern => ()
-  }
+  private val engine = system.spawn(
+    behavior = OverEngine.behavior[Ctx, Val](protocol, config),
+    name = s"OverEngine-${PID()}",
+  )
 
   /**
    * Websocket Handler Shorthand with the proper sub protocol and flow.
@@ -93,7 +85,7 @@ class OverTransportLayer[Ctx, Val](
 
     val (actorRef, publisher) = ActorSource
       .actorRef[String](
-        completionMatcher = FaultFunction,
+        completionMatcher = PoisonPill.partialFunction,
         failureMatcher = PartialFunction.empty,
         bufferSize = bufferSize,
         overflowStrategy = OverflowStrategy.dropHead

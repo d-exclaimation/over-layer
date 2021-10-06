@@ -38,7 +38,7 @@ object OverGW extends OverWebsocket {
   def decoder(json: JsValue): GraphMessage = try {
     json.asJsObject.getFields("type", "payload", "id") match {
 
-      case Seq(JsString(Subscribe), JsObject(p), JsString(id)) => decodeStart(p, id)
+      case Seq(JsString(Subscribe), p: JsObject, JsString(id)) => parse(p, id)
 
       // Complete operation
       case Seq(JsString(Complete), JsString(id)) => GraphStop(id)

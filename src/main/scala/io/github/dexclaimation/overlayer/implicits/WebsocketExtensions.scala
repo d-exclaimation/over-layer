@@ -17,7 +17,7 @@ import io.github.dexclaimation.overlayer.model.json.Encodable
 object WebsocketExtensions {
 
   /** Websocket Ref Extensions */
-  implicit class ExtendRef(ref: Ref) {
+  implicit final class ExtendRef(ref: Ref) {
 
     /**
      * Send a encodable message to the Websocket connection referenced by this ActorRef using *at-most-once* messaging semantics.
@@ -36,7 +36,7 @@ object WebsocketExtensions {
 
 
   /** Encodable Message Extensions */
-  implicit class ExtendEncodable(en: Encodable) {
+  implicit final class ExtendEncodable(en: Encodable) {
     /** Encode into text message strict */
     def textMessage: TextMessage.Strict = TextMessage.Strict(en.json)
   }

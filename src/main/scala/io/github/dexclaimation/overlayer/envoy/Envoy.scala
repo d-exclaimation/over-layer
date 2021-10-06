@@ -20,7 +20,7 @@ import io.github.dexclaimation.overlayer.model.SchemaConfig
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, PID, Ref}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
 import io.github.dexclaimation.overlayer.protocol.common.{GqlError, OperationMessage}
-import io.github.dexclaimation.overlayer.utils.ExceptionUtil.tolerate
+import io.github.dexclaimation.overlayer.utils.ExceptionUtil.safe
 import sangria.ast.Document
 import sangria.execution.ExecutionScheme.Stream
 import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
@@ -57,7 +57,7 @@ class Envoy[Ctx, Val](
   private val ops = mutable.Map.empty[OID, KillSwitch]
 
   def onMessage(msg: EnvoyMessage): Behavior[EnvoyMessage] = receive(msg) {
-    case Subscribe(oid, ast, op, vars) => tolerate {
+    case Subscribe(oid, ast, op, vars) => safe {
       val sink = ActorSink
         .actorRef[EnvoyMessage](
           context.self,
@@ -79,7 +79,7 @@ class Envoy[Ctx, Val](
       ops.update(oid, kill)
     }
 
-    case Unsubscribe(oid) => tolerate {
+    case Unsubscribe(oid) => safe {
       ops.remove(oid)
     }
 
@@ -89,11 +89,11 @@ class Envoy[Ctx, Val](
         ops.remove(oid)
       }
 
-    case Output(oid, data) => tolerate {
+    case Output(oid, data) => safe {
       if (ops.contains(oid)) ref <~ data
     }
 
-    case Faults(oid, data) => tolerate {
+    case Faults(oid, data) => safe {
       ref <~ data
       ops.remove(oid)
     }

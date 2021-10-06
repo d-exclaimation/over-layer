@@ -26,9 +26,7 @@ class ModelTest extends AnyWordSpec with Matchers {
       }
 
       "be able to match in partial function" in {
-        val completionMatcher: PartialFunction[String, Unit] = {
-          case PoisonPill.Pattern => ()
-        }
+        val completionMatcher: PartialFunction[String, Unit] = PoisonPill.partialFunction
 
         completionMatcher(PoisonPill())
       }

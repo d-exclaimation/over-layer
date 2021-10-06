@@ -9,15 +9,14 @@
 package io.github.dexclaimation.overlayer.protocol
 
 import akka.http.scaladsl.model.ws.TextMessage
-import io.github.dexclaimation.overlayer.model.Subtypes.Ref
+import io.github.dexclaimation.overlayer.implicits.JsValueExtensions._
+import io.github.dexclaimation.overlayer.model.Subtypes.{OID, Ref}
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphImmediate, GraphStart}
-import io.github.dexclaimation.overlayer.utils.OverGraphQL
 import sangria.ast.OperationType
-import sangria.parser.QueryParser
-import spray.json.{JsString, JsValue}
+import spray.json.{JsObject, JsValue}
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 /** GraphQL Over Websocket Sub Protocols Specification */
 trait OverWebsocket {
@@ -43,25 +42,24 @@ trait OverWebsocket {
   def error: String
 
   /** Decode Payload into queryAst & operationName & variables, otherwise return an error intent */
-  def decodeStart(payload: Map[String, JsValue], id: String): GraphMessage = payload
-    .get("query")
-    .flatMap {
-      case JsString(query) =>
-        val op = OverGraphQL.getOperationName(payload)
-        val variables = OverGraphQL.getVariables(payload)
-
-        QueryParser.parse(query) match {
-          case Failure(_) => None
-          case Success(ast) => ast.operation(op).map(_.operationType).map {
-            case OperationType.Subscription => GraphStart(id, ast, op, variables)
-            case _ => GraphImmediate(id, ast, op, variables)
-          }
-        }
-      case _ => None
+  def parse(payload: JsObject, id: OID): GraphMessage = payload
+    .graphql
+    .map { case (ast, op, vars) => ast
+      .operationType(op)
+      .map {
+        case OperationType.Subscription => GraphStart(id, ast, op, vars)
+        case _ => GraphImmediate(id, ast, op, vars)
+      }
     }
-    .getOrElse(
-      GraphError(id, "Invalid request query or non subscription operation")
-    )
+    .map(_.map(Success.apply))
+    .flatMap(_.getOrElse(noOperation))
+    .unwrap { e =>
+      GraphError(id, e.getMessage)
+    }
+
+  /** Decode Payload into queryAst & operationName & variables, otherwise return an error intent */
+  @deprecated("Use 'parse' instead")
+  def decodeStart(payload: Map[String, JsValue], id: String): GraphMessage = parse(JsObject(payload), id)
 }
 
 

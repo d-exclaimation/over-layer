@@ -14,7 +14,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 
 object StreamExtensions {
   /** Source Extensions */
-  implicit class SourceExtensions[Out, Mat](firstSource: Source[Out, Mat]) {
+  implicit final class SourceExtensions[Out, Mat](firstSource: Source[Out, Mat]) {
     /**
      * Add additional output Source stream to an existing one,
      * with a single completion strategy.
@@ -30,7 +30,7 @@ object StreamExtensions {
   }
 
   /** Sink Extensions */
-  implicit class SinkExtensions[In, Mat](sink: Sink[In, Mat]) {
+  implicit final class SinkExtensions[In, Mat](sink: Sink[In, Mat]) {
 
     /** Add additional transform effect before sink */
     def withBefore[In2](f: In2 => In): Sink[In2, NotUsed] =
