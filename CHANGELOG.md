@@ -1,5 +1,12 @@
 # CHANGELOG
 
+### v0.2.3
+
+- Fixed issue with invalid `type` on incoming messages to terminate the connection.
+- Removed deprecated, unused code.
+- Made `GqlError` into proper case class.
+- Renamed `Route` middleware directives to `applyMiddleware` from `ws`.
+
 ### v0.2.2
 
 - Fixed issue with sub-protocol error message to be user understandable.

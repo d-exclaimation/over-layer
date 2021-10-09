@@ -5,7 +5,7 @@ scalaVersion := "2.13.3"
 
 ThisBuild / name := "over-layer"
 ThisBuild / organization := "io.github.d-exclaimation"
-ThisBuild / version := "0.2.2"
+ThisBuild / version := "0.2.3"
 ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -25,7 +25,7 @@ ThisBuild / developers := List(
 
 crossPaths := false
 
-ThisBuild / description := "A GraphQL over Websocket Stream-based Subscription Transport Layer on Akka."
+ThisBuild / description := "A GraphQL over Websocket Stream-based Transport Layer on Akka."
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / homepage := Some(url("https://overlayer.netlify.app"))
 
