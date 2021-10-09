@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.0.0
+
+Websocket transport feature complete with unit tests and major bug fixes, published with scala compiler version.
+
 ### v0.2.3
 
 - Fixed issue with invalid `type` on incoming messages to terminate the connection.
