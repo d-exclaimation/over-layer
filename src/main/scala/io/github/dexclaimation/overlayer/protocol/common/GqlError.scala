@@ -7,24 +7,32 @@
 
 package io.github.dexclaimation.overlayer.protocol.common
 
-import spray.json.{JsArray, JsObject, JsString}
+import io.github.dexclaimation.overlayer.model.json.Encodable
+import spray.json.{JsArray, JsObject, JsString, JsValue}
 
-object GqlError {
-  /**
-   * GraphQL Error with only Message
-   *
-   * @param message Error Message as String
-   */
-  def apply(message: String): JsObject = JsObject(
+/**
+ * GraphQL Error with only Message
+ *
+ * @param message Error Message as String
+ */
+case class GqlError(message: String) extends Encodable {
+  def jsObject: JsObject = JsObject(
     "message" -> JsString(message)
   )
+}
+
+object GqlError {
 
   /**
    * Multiple GraphQL Error with only messages
    *
    * @param messages Error messages
    */
-  def of(messages: String*): JsArray = JsArray(
-    messages.map(apply): _*
-  )
+  def of(messages: String*): JsArray = {
+    val jsValues: Seq[JsValue] = messages
+      .map(apply)
+      .map(_.jsObject)
+    
+    JsArray(jsValues: _*)
+  }
 }

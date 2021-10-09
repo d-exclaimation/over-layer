@@ -64,6 +64,17 @@ class OverTransportLayer[Ctx, Val](
     name = s"OverEngine-${PID()}",
   )
 
+
+  /**
+   * Websocket route with the proper sub protocol and flow.
+   *
+   * ''Does not include a path, add this inside your path directives''
+   *
+   * @param ctx Context object used in the request.
+   * @return A Route
+   */
+  def applyMiddleware(ctx: Ctx): Route = handleWebSocketMessagesForProtocol(flow(ctx), protocol.name)
+
   /**
    * Websocket Handler Shorthand with the proper sub protocol and flow.
    *
@@ -72,6 +83,7 @@ class OverTransportLayer[Ctx, Val](
    * @param ctx Context object used in the request.
    * @return A Route
    */
+  @deprecated("use 'applyMiddleware' instead")
   def ws(ctx: Ctx): Route = handleWebSocketMessagesForProtocol(flow(ctx), protocol.name)
 
   /**
@@ -128,7 +140,7 @@ class OverTransportLayer[Ctx, Val](
 
       case GraphError(oid, message) => ref <~ OperationMessage(protocol.error, oid, GqlError.of(message))
 
-      case GraphException(message) => ref <~ OperationMessage(protocol.error, "4400", GqlError.of(message))
+      case GraphException(message) => onTerminated(message, ref)
 
       case GraphPing() => ref <~ OperationMessage.just("pong")
 
@@ -137,6 +149,12 @@ class OverTransportLayer[Ctx, Val](
       case GraphIgnore() => ()
     }
     case _ => ()
+  }
+
+  /** onTerminated Hook */
+  private def onTerminated(message: String, ref: Ref): TerminateHook = {
+    ref <~ OperationMessage(protocol.error, "4400", GqlError.of(message))
+    ref ! PoisonPill()
   }
 
   /** onEnd Hook */
