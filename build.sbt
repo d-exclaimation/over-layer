@@ -3,7 +3,8 @@
 
 scalaVersion := "2.13.3"
 
-ThisBuild / name := "over-layer"
+name := "over-layer"
+
 ThisBuild / organization := "io.github.d-exclaimation"
 ThisBuild / version := "1.0.0"
 ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
