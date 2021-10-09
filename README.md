@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./over-layer.png" width="175" alt="logo" style="margin:1rem;"/>
+<img src="https://github.com/d-exclaimation/over-layer/blob/main/over-layer.png" width="175" alt="logo" style="margin:1rem;"/>
 </p>
 <p align="center"> <h1>OverLayer</h1></p>
 
