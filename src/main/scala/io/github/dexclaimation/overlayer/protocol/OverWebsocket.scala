@@ -56,10 +56,6 @@ trait OverWebsocket {
     .unwrap { e =>
       GraphError(id, e.getMessage)
     }
-
-  /** Decode Payload into queryAst & operationName & variables, otherwise return an error intent */
-  @deprecated("Use 'parse' instead")
-  def decodeStart(payload: Map[String, JsValue], id: String): GraphMessage = parse(JsObject(payload), id)
 }
 
 

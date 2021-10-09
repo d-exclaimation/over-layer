@@ -47,6 +47,10 @@ object OperationMessage {
   def apply(_type: String, oid: OID, payload: JsValue) =
     new OperationMessage(_type, Some(oid), Some(payload))
 
+  /** Protocol compliant full Operation message */
+  def apply(_type: String, oid: OID, payload: Encodable) =
+    new OperationMessage(_type, Some(oid), Some(payload.jsObject))
+
   /** Protocol compliant Operation message with no payload */
   def apply(_type: String, oid: OID) =
     new OperationMessage(_type, Some(oid), None)
