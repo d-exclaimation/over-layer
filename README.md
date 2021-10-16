@@ -14,12 +14,6 @@ A GraphQL over Websocket Stream-based Transport Layer on Akka.
 "io.github.d-exclaimation" %% "over-layer" % latestVersion
 ```
 
-or
-
-```sbt
-"io.github.d-exclaimation" % "over-layer" % latestVersion
-```
-
 ## GraphQL Over Websockets
 
 In the GraphQL world, we have the concept of a "subscription" which is a request from the client to subscribe a stream
