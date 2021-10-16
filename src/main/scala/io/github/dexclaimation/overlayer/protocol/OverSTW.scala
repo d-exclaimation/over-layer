@@ -41,20 +41,20 @@ object OverSTW extends OverWebsocket {
       // Start Operation
       case Seq(JsString(GQL_START), payload: JsObject, JsString(id)) => parse(payload, id)
 
-      case Seq(JsString(GQL_STOP), JsString(id)) => GraphStop(id)
+      case Seq(JsString(GQL_STOP), JsString(id)) => Stop(id)
 
       // Connection Init
-      case Seq(JsString(GQL_CONNECTION_INIT), _: JsObject) => GraphInit()
-      case Seq(JsString(GQL_CONNECTION_INIT)) => GraphInit()
+      case Seq(JsString(GQL_CONNECTION_INIT), _: JsObject) => Init()
+      case Seq(JsString(GQL_CONNECTION_INIT)) => Init()
 
       // Connection Termination
-      case Seq(JsString(GQL_CONNECTION_TERMINATE)) => GraphTerminate()
+      case Seq(JsString(GQL_CONNECTION_TERMINATE)) => Terminate()
 
       // Irrelevant JsObject
-      case _ => GraphException("Invalid operation message type")
+      case _ => Exception("Invalid operation message type")
     }
   } catch {
-    case NonFatal(_) => GraphException("Invalid operation message type")
+    case NonFatal(_) => Exception("Invalid operation message type")
   }
 
   def init(ref: Ref): Unit = {

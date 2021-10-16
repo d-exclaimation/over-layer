@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.ws.TextMessage
 import io.github.dexclaimation.overlayer.implicits.JsValueExtensions._
 import io.github.dexclaimation.overlayer.model.Subtypes.{OID, Ref}
 import io.github.dexclaimation.overlayer.protocol.common.GraphMessage
-import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{GraphError, GraphImmediate, GraphStart}
+import io.github.dexclaimation.overlayer.protocol.common.GraphMessage.{Error, Req, Start}
 import sangria.ast.OperationType
 import spray.json.{JsObject, JsValue}
 
@@ -47,14 +47,14 @@ trait OverWebsocket {
     .map { case (ast, op, vars) => ast
       .operationType(op)
       .map {
-        case OperationType.Subscription => GraphStart(id, ast, op, vars)
-        case _ => GraphImmediate(id, ast, op, vars)
+        case OperationType.Subscription => Start(id, ast, op, vars)
+        case _ => Req(id, ast, op, vars)
       }
     }
     .map(_.map(Success.apply))
     .flatMap(_.getOrElse(noOperation))
     .unwrap { e =>
-      GraphError(id, e.getMessage)
+      Error(id, e.getMessage)
     }
 }
 

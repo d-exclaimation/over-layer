@@ -26,7 +26,6 @@ import io.github.dexclaimation.overlayer.model.Hooks._
 import io.github.dexclaimation.overlayer.model.Subtypes.{PID, Ref}
 import io.github.dexclaimation.overlayer.model.{PoisonPill, SchemaConfig}
 import io.github.dexclaimation.overlayer.protocol.OverWebsocket
-import io.github.dexclaimation.overlayer.protocol.common.GraphMessage._
 import io.github.dexclaimation.overlayer.protocol.common.{GqlError, GraphMessage, OperationMessage}
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{DeprecationTracker, ExceptionHandler, Middleware, QueryReducer}
@@ -130,23 +129,23 @@ class OverTransportLayer[Ctx, Val](
   /** onMessage Hook */
   private def onMessage(ctx: Any, pid: String, ref: Ref): MessageHook = {
     case TextMessage.Strict(msg) => JsonParser(msg).convertTo[GraphMessage] match {
-      case GraphInit() => onInit(pid, ref)
+      case GraphMessage.Init() => onInit(pid, ref)
 
-      case GraphStart(oid, ast, op, vars) => engine ! StartOp(pid, oid, ast, ctx, op, vars)
+      case GraphMessage.Start(oid, ast, op, vars) => engine ! StartOp(pid, oid, ast, ctx, op, vars)
 
-      case GraphImmediate(oid, ast, op, vars) => engine ! StatelessOp(pid, oid, ast, ctx, op, vars)
+      case GraphMessage.Req(oid, ast, op, vars) => engine ! StatelessOp(pid, oid, ast, ctx, op, vars)
 
-      case GraphStop(oid) => engine ! StopOp(pid, oid)
+      case GraphMessage.Stop(oid) => engine ! StopOp(pid, oid)
 
-      case GraphError(oid, message) => ref <~ OperationMessage(protocol.error, oid, GqlError.of(message))
+      case GraphMessage.Error(oid, message) => ref <~ OperationMessage(protocol.error, oid, GqlError.of(message))
 
-      case GraphException(message) => onTerminated(message, ref)
+      case GraphMessage.Exception(message) => onTerminated(message, ref)
 
-      case GraphPing() => ref <~ OperationMessage.just("pong")
+      case GraphMessage.Ping() => ref <~ OperationMessage.just("pong")
 
-      case GraphTerminate() => ref ! PoisonPill()
+      case GraphMessage.Terminate() => ref ! PoisonPill()
 
-      case GraphIgnore() => ()
+      case GraphMessage.Ignore() => ()
     }
     case _ => ()
   }

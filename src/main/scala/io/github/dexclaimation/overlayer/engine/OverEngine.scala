@@ -119,8 +119,8 @@ class OverEngine[Ctx, Val](
     )
     .map(result => OperationMessage(protocol.next, oid, result))
     .recover {
-      case error: QueryAnalysisError => OperationMessage(protocol.error, oid, error.resolveError)
-      case error: ErrorWithResolver => OperationMessage(protocol.error, oid, error.resolveError)
+      case error: QueryAnalysisError => OperationMessage(protocol.next, oid, error.resolveError)
+      case error: ErrorWithResolver => OperationMessage(protocol.next, oid, error.resolveError)
     }
 
 }

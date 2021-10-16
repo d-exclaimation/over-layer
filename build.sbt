@@ -1,12 +1,12 @@
 
 // The simplest possible sbt build file is just one line:
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.13.6"
 
 name := "over-layer"
 
 ThisBuild / organization := "io.github.d-exclaimation"
-ThisBuild / version := "1.0.0"
+ThisBuild / version := "1.0.1"
 ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -45,7 +45,7 @@ ThisBuild / versionScheme := Some("early-semver")
 
 libraryDependencies ++= {
   val sangriaVer = "2.1.3"
-  val AkkaVersion = "2.6.16"
+  val AkkaVersion = "2.6.17"
   val AkkaHttpVersion = "10.2.6"
   Seq(
     "org.sangria-graphql" %% "sangria" % sangriaVer,

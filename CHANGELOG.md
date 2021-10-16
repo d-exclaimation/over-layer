@@ -1,5 +1,10 @@
 # CHANGELOG
 
+### v1.0.1
+
+- Fixed operation message type for resolver error in `Query/Mutation` operations.
+- Updated dependencies and scala version.
+
 ## v1.0.0
 
 Websocket transport feature complete with unit tests and major bug fixes, published with scala compiler version.

@@ -41,27 +41,27 @@ object OverGW extends OverWebsocket {
       case Seq(JsString(Subscribe), p: JsObject, JsString(id)) => parse(p, id)
 
       // Complete operation
-      case Seq(JsString(Complete), JsString(id)) => GraphStop(id)
+      case Seq(JsString(Complete), JsString(id)) => Stop(id)
 
       // Initial connection
-      case Seq(JsString(ConnectionInit), _: JsObject) => GraphInit()
-      case Seq(JsString(ConnectionInit)) => GraphInit()
+      case Seq(JsString(ConnectionInit), _: JsObject) => Init()
+      case Seq(JsString(ConnectionInit)) => Init()
 
       // Ping operation
-      case Seq(JsString(Ping), _: JsObject) => GraphPing()
-      case Seq(JsString(Ping)) => GraphPing()
+      case Seq(JsString(Ping), _: JsObject) => GraphMessage.Ping()
+      case Seq(JsString(Ping)) => GraphMessage.Ping()
 
       // Pong operation
-      case Seq(JsString(Pong), _: JsObject) => GraphIgnore()
-      case Seq(JsString(Pong)) => GraphIgnore()
+      case Seq(JsString(Pong), _: JsObject) => Ignore()
+      case Seq(JsString(Pong)) => Ignore()
 
       // Irrelevant JsObject
-      case _ => GraphException(
+      case _ => Exception(
         "No \"type\" field that properly matches the protocol spec or object schema does not conform to spec"
       )
     }
   } catch {
-    case NonFatal(_) => GraphException(
+    case NonFatal(_) => Exception(
       "No \"type\" field that properly matches the protocol spec or object schema does not conform to spec"
     )
   }

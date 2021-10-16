@@ -17,29 +17,29 @@ sealed trait GraphMessage
 
 object GraphMessage {
   /** GraphQL Connection Initialization Acknowledgment (''Client has set itself up to receive and send messages'') */
-  case class GraphInit() extends GraphMessage
+  case class Init() extends GraphMessage
 
   /** GraphQL Operation Start (''A new operation with an id is being requested'') */
-  case class GraphStart(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
+  case class Start(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
 
   /** GraphQL Operation Request (''A new operation with an id is being requested'') */
-  case class GraphImmediate(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
+  case class Req(oid: OID, ast: Document, op: Option[String], vars: JsObject) extends GraphMessage
 
   /** GraphQL Operation Stop (''A request ending an operation using the id'') */
-  case class GraphStop(oid: OID) extends GraphMessage
+  case class Stop(oid: OID) extends GraphMessage
 
   /** GraphQL Operation doesn't met requirement to be understood by the server */
-  case class GraphError(oid: OID, message: String) extends GraphMessage
+  case class Error(oid: OID, message: String) extends GraphMessage
 
   /** GraphQL Message doesn't met requirement to be understood by the server */
-  case class GraphException(message: String) extends GraphMessage
+  case class Exception(message: String) extends GraphMessage
 
   /** GraphQL Ping Message checking for alive connection */
-  case class GraphPing() extends GraphMessage
+  case class Ping() extends GraphMessage
 
   /** GraphQL Request to terminate the entire connection */
-  case class GraphTerminate() extends GraphMessage
+  case class Terminate() extends GraphMessage
 
   /** GraphQL Ignored messages */
-  case class GraphIgnore() extends GraphMessage
+  case class Ignore() extends GraphMessage
 }

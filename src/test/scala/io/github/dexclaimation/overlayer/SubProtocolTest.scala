@@ -58,7 +58,7 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "return GraphInit" in {
         val initReq = JsonParser(OperationMessage.just(GQL_CONNECTION_INIT).json)
         protocol.decoder(initReq) match {
-          case GraphMessage.GraphInit() =>
+          case GraphMessage.Init() =>
             val inbox = new CustomTestInbox(_.contains("stop"))
 
             protocol.init(inbox.ref)
@@ -83,22 +83,22 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         val terminate = OperationMessage.just(GQL_CONNECTION_TERMINATE)
 
         decode(protocol, start.json) {
-          case GraphMessage.GraphStart(oid, _, None, JsObject.empty) => assertResult("1")(oid)
+          case GraphMessage.Start(oid, _, None, JsObject.empty) => assertResult("1")(oid)
           case _ => fail("GQL_START does not return GraphStart or GraphImmediate")
         }
 
         decode(protocol, stop.json) {
-          case GraphMessage.GraphStop(oid) => assertResult("1")(oid)
+          case GraphMessage.Stop(oid) => assertResult("1")(oid)
           case _ => fail("GQL_STOP does not return GraphStop")
         }
 
         decode(protocol, immediate.json) {
-          case GraphMessage.GraphImmediate(oid, _, None, JsObject.empty) => assertResult("2")(oid)
+          case GraphMessage.Req(oid, _, None, JsObject.empty) => assertResult("2")(oid)
           case _ => fail("GQL_START does not return GraphStart or GraphImmediate")
         }
 
         decode(protocol, terminate.json) {
-          case GraphMessage.GraphTerminate() => assertResult(true)(true)
+          case GraphMessage.Terminate() => assertResult(true)(true)
           case _ => fail("GQL_CONNECTION_TERMINATE does not return GraphTerminate")
         }
       }
@@ -136,7 +136,7 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     "given ConnectionInit" should {
       "return GraphInit" in {
         decode(protocol, OperationMessage.just(ConnectionInit).json) {
-          case GraphMessage.GraphInit() =>
+          case GraphMessage.Init() =>
             val inbox = new CustomTestInbox(_.contains("stop"))
 
             protocol.init(inbox.ref)
@@ -161,27 +161,27 @@ class SubProtocolTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         val ping = OperationMessage.just(Ping)
 
         decode(protocol, start.json) {
-          case GraphMessage.GraphStart(oid, _, None, JsObject.empty) => assertResult("1")(oid)
+          case GraphMessage.Start(oid, _, None, JsObject.empty) => assertResult("1")(oid)
           case _ => fail("Subscribe does not return GraphStart or GraphImmediate")
         }
 
         decode(protocol, stop.json) {
-          case GraphMessage.GraphStop(oid) => assertResult("1")(oid)
+          case GraphMessage.Stop(oid) => assertResult("1")(oid)
           case _ => fail("Complete does not return GraphStop")
         }
 
         decode(protocol, immediate.json) {
-          case GraphMessage.GraphImmediate(oid, _, None, JsObject.empty) => assertResult("2")(oid)
+          case GraphMessage.Req(oid, _, None, JsObject.empty) => assertResult("2")(oid)
           case _ => fail("Subscribe does not return GraphStart or GraphImmediate")
         }
 
         decode(protocol, pong.json) {
-          case GraphMessage.GraphIgnore() => assertResult(true)(true)
+          case GraphMessage.Ignore() => assertResult(true)(true)
           case _ => fail("Pong does not return GraphIgnored")
         }
 
         decode(protocol, ping.json) {
-          case GraphMessage.GraphPing() => assertResult(true)(true)
+          case GraphMessage.Ping() => assertResult(true)(true)
           case _ => fail("Pong does not return GraphIgnored")
         }
       }
