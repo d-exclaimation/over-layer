@@ -2,6 +2,10 @@
 
 ### v1.0.1
 
+- Updated to latest version of all dependencies
+
+### v1.0.1
+
 - Fixed operation message type for resolver error in `Query/Mutation` operations.
 - Updated dependencies and scala version.
 

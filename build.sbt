@@ -6,7 +6,7 @@ scalaVersion := "2.13.6"
 name := "over-layer"
 
 ThisBuild / organization := "io.github.d-exclaimation"
-ThisBuild / version := "1.0.1"
+ThisBuild / version := "1.0.2"
 ThisBuild / organizationHomepage := Some(url("https://www.dexclaimation.com"))
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -44,9 +44,9 @@ ThisBuild / publishMavenStyle := true
 ThisBuild / versionScheme := Some("early-semver")
 
 libraryDependencies ++= {
-  val sangriaVer = "2.1.3"
+  val sangriaVer = "2.1.5"
   val AkkaVersion = "2.6.17"
-  val AkkaHttpVersion = "10.2.6"
+  val AkkaHttpVersion = "10.2.7"
   Seq(
     "org.sangria-graphql" %% "sangria" % sangriaVer,
     "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2",
