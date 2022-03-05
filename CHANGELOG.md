@@ -1,6 +1,10 @@
 # CHANGELOG
 
-### v1.0.1
+### v1.0.3
+
+- Updated to latest major versions of all dependencies
+
+### v1.0.2
 
 - Updated to latest version of all dependencies
 
